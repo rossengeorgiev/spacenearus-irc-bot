@@ -66,7 +66,7 @@ var command_regex = /^\!([a-z]+) ?(.*)?$/;
 bot.addListener('message', function (from, to, message) {
     var match = message.match(command_regex);
 
-    if(match.length) {
+    if(match && match.length) {
         var cmd = match[1];
         var args = (match[2] === undefined) ? "" : match[2];
 
