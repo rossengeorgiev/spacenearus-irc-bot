@@ -15,7 +15,7 @@ var storage = {
 };
 var init_complete = false;
 
-COLOR_SBJ = 'yellow';
+COLOR_SBJ = 'magenta';
 COLOR_EXT = 'light_blue';
 COLOR_URL = 'dark_blue';
 
@@ -121,7 +121,7 @@ bot.addListener('error', function(message) {
 // wrapper function for nice looking reponses
 
 function respond(dest, to, msg) {
-    var resp = (to) ? irc.colors.wrap("yellow", to) + ": " : "";
+    var resp = (to) ? irc.colors.wrap(COLOR_SBJ, to) + ": " : "";
 
     if(typeof msg == 'string') {
         resp += msg;
