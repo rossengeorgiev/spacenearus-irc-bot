@@ -16,10 +16,12 @@ var storage = {
 var init_complete = false;
 
 COLOR_SBJ = 'yellow';
+COLOR_EXT = 'light_blue';
 COLOR_URL = 'dark_blue';
 
+url_geocode = "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&key=" + config.google_api_key +"&latlng=";
+
 function init() {
-    console.log("INIT");
     if(init_complete) return;
     init_complete = true;
 
@@ -35,7 +37,7 @@ req("http://spacenear.us/tracker/datanew.php?mode=latest&type=positions&format=j
 
         var obj = {};
         for(var k in data) {
-            var name = data[k].vehicle;
+            var name = data[k].vehicle.toLowerCase();
 
             obj[name] = data[k];
             obj[name]['gps_time'] = new Date(obj[name]['gps_time'] + "Z");
@@ -109,7 +111,7 @@ bot.addListener('message', function (from, to, message) {
 });
 
 bot.addListener('join', function(chan, nick, msg ) {
-    if(nick == config.nick) init();
+    if(nick.indexOf(config.nick) == 0) init();
 });
 
 bot.addListener('error', function(message) {
@@ -155,6 +157,8 @@ function handle_hysplit(options) {
                 storage.hysplit.timestamp = (new Date()).getTime();
                 storage.hysplit.data = JSON.parse(body);
 
+                for(var k in storage.hysplit.data) storage.hysplit.data[k.toLowerCase()] = storage.hysplit.data[k];
+
                 reply_hysplit(options);
             }
         })
@@ -178,8 +182,8 @@ function reply_hysplit(opts) {
 // handle pong
 
 function handle_ping(opts) {
-    if(storage.tracker.data && opts.args in storage.tracker.data) {
-        var timestamp = storage.tracker.data[opts.args].gps_time;
+    if(storage.tracker.data && opts.args.toLowerCase() in storage.tracker.data) {
+        var timestamp = storage.tracker.data[opts.args.toLowerCase()].gps_time;
 
         respond(opts.channel, opts.from, ["Last contact was", [COLOR_SBJ, moment(timestamp).fromNow()]]);
     }
@@ -189,12 +193,26 @@ function handle_ping(opts) {
 };
 
 function handle_whereis(opts) {
-    if(storage.tracker.data && opts.args in storage.tracker.data) {
-        var lat = storage.tracker.data[opts.args].gps_lat;
-        var lng = storage.tracker.data[opts.args].gps_lon;
-        var alt = storage.tracker.data[opts.args].gps_alt;
+    if(storage.tracker.data && opts.args.toLowerCase() in storage.tracker.data) {
+        var name = opts.args.toLowerCase();
+        var lat = storage.tracker.data[name].gps_lat;
+        var lng = storage.tracker.data[name].gps_lon;
+        var alt = storage.tracker.data[name].gps_alt;
 
-        respond(opts.channel, opts.from, ["Near", [COLOR_SBJ, lat+', '+lng], "at", [COLOR_SBJ, alt + " meters."]]);
+        req(url_geocode + lat + ',' + lng, function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                var data = JSON.parse(body);
+                if(data.results.length) {
+                    var address = data.results[0].formatted_address;
+                    respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [COLOR_SBJ, address], [COLOR_EXT, '('+lat+','+lng+')'], "at", [COLOR_SBJ, alt + " meters."]]);
+                }
+                return;
+            }
+
+            respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [COLOR_SBJ, lat+','+lng], "at", [COLOR_SBJ, alt + " meters."]]);
+        });
+
+
     }
     else {
         respond(opts.channel, opts.from, "I haven't got a clue");
