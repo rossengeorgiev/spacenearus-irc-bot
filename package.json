@@ -1,0 +1,19 @@
+{
+    "name": "spacenearus-irc-bot",
+    "version": "0.0.1",
+    "description": "An irc bot for http://spacenear.us",
+    "author": "Rossen Popov <zx.phone@gmail.com>",
+    "main": "./bot",
+    "repository": {
+        "type":"git",
+        "url":"https://github.com/rossengeorgiev/spacenearus-irc-bot.git"
+    },
+    "engines": {
+        "node": ">=0.4.0"
+    },
+    "dependencies": {
+        "irc": ">=0.3.7",
+        "moment": ">=2.8.1",
+        "request": ">=2.40.0",
+    }
+}

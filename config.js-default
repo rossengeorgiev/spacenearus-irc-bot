@@ -1,0 +1,9 @@
+var config = {
+    server: "",
+    port: "",
+    nick: "",
+    password: "",
+    channels: []
+}
+
+module.exports = config;
