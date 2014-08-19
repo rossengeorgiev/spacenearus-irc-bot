@@ -46,8 +46,8 @@ req("http://spacenear.us/tracker/datanew.php?mode=latest&type=positions&format=j
             if(storage.tracker.data) {
                 if(!(name in storage.tracker.data)) {
                     notify(["New vehicle on the map:", [COLOR_SBJ, name]]);
-                } else if(storage.tracker.data[name].gps_time.getTime() + 43200000 < obj[name].gps_time.getTime())  {
-                    notify(["New position from", [COLOR_SBJ, name], "after", [COLOR_SBJ, moment(storage.tracker.data[name].gps_time).fromNow(true)], "silence."]);
+                } else if(storage.tracker.data[name].gps_time.getTime() + 21600000 < obj[name].gps_time.getTime())  {
+                    notify(["New position from", [COLOR_SBJ, name], "after", [COLOR_SBJ, moment(storage.tracker.data[name].gps_time).fromNow(true)], "silence"]);
                 }
             }
         }
@@ -87,7 +87,7 @@ bot.addListener('message', function (from, to, message) {
 
             case "wiki": respond(to, from, [
                                  "Here you go -",
-                                 [COLOR_URL, "http://wiki.ukhas.org.uk"]
+                                 [COLOR_URL, "http://ukhas.org.uk"]
                              ]); break;
 
             case "ping": handle_ping({
@@ -145,6 +145,12 @@ function notify(msg) {
     }
 }
 
+// util
+
+function format_number(num, decimal_places) {
+        return Math.floor(num * Math.pow(10, decimal_places)) / Math.pow(10,decimal_places);
+}
+
 // handle hysplit
 
 function handle_hysplit(options) {
@@ -175,7 +181,7 @@ function reply_hysplit(opts) {
                 ]);
     }
     else {
-        respond(opts.channel, opts.from, "No HYSPLIT for that callsign.");
+        respond(opts.channel, opts.from, "No HYSPLIT for that callsign");
     }
 }
 
@@ -195,21 +201,21 @@ function handle_ping(opts) {
 function handle_whereis(opts) {
     if(storage.tracker.data && opts.args.toLowerCase() in storage.tracker.data) {
         var name = opts.args.toLowerCase();
-        var lat = storage.tracker.data[name].gps_lat;
-        var lng = storage.tracker.data[name].gps_lon;
-        var alt = storage.tracker.data[name].gps_alt;
+        var lat = format_number(storage.tracker.data[name].gps_lat, 5);
+        var lng = format_number(storage.tracker.data[name].gps_lon, 5);
+        var alt = format_number(storage.tracker.data[name].gps_alt, 0);
 
         req(url_geocode + lat + ',' + lng, function(error, response, body) {
             if (!error && response.statusCode == 200) {
                 var data = JSON.parse(body);
                 if(data.results.length) {
                     var address = data.results[0].formatted_address;
-                    respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [COLOR_SBJ, address], [COLOR_EXT, '('+lat+','+lng+')'], "at", [COLOR_SBJ, alt + " meters."]]);
+                    respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [COLOR_SBJ, address], [COLOR_EXT, '('+lat+','+lng+')'], "at", [COLOR_SBJ, alt + " meters"]]);
                 }
                 return;
             }
 
-            respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [COLOR_SBJ, lat+','+lng], "at", [COLOR_SBJ, alt + " meters."]]);
+            respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [COLOR_SBJ, lat+','+lng], "at", [COLOR_SBJ, alt + " meters"]]);
         });
 
 
