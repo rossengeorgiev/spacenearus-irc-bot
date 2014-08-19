@@ -17,9 +17,14 @@ var bot = {
         }
     },
     color: {
+        /*
         SBJ:'magenta',
         EXT:'light_blue',
         URL:'dark_blue'
+        */
+        SBJ:'dark_green',
+        EXT:'light_cyan',
+        URL:'light_blue'
     },
 
     client: null,
@@ -70,6 +75,10 @@ var bot = {
 
                     case "ping": ctx.handle_ping(opts); break;
                     case "whereis": ctx.handle_whereis(opts); break;
+
+                    case "flights": ctx.handle_flights(opts); break;
+                    case "flight": ctx.handle_flight(opts); break;
+                    case "payloads": ctx.handle_payloads(opts); break;
 
                     default: break;
                 }
@@ -248,6 +257,156 @@ var bot = {
     handle_track: function(opts) {
         var url = this.url_hmt_vehicle + opts.args.split(/[, ;]/).filter(function(val) { return val != "";}).join(";")
         this.respond(opts.channel, opts.from, ["Here you go -", [this.color.URL, url]]);
+    },
+
+
+    // habitat stuff
+    //
+    handle_flights: function(opts) {
+        var ctx = this;
+
+        req("http://habitat.habhub.org/habitat/_design/flight/_view/end_start_including_payloads?include_docs=true&startkey=["+((new Date()).getTime()/1000)+"]", function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                var data = JSON.parse(body);
+
+                if(data.rows.length) {
+                    var msg = ["Current flights:"];
+
+
+                    for(var k in data.rows) {
+                        var id = data.rows[k].id.substr(0,4);
+                        var doc = data.rows[k].doc;
+
+                        if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime()) {
+                            msg.push([ctx.color.SBJ, doc.name],[ctx.color.EXT, "("+id+"),"]);
+                        }
+                    }
+
+                    // remove extra comma
+                    var xref = msg[msg.length - 1];
+                    xref[1] = xref[1].slice(0,-1);
+
+                    ctx.respond(opts.channel, opts.from, msg);
+                }
+                else {
+                    ctx.respond(opts.channel, opts.from, "There are no flights currently :(");
+                }
+            }
+
+        });
+    },
+
+    handle_flight: function(opts) {
+        var ctx = this;
+
+        req("http://habitat.habhub.org/habitat/_design/flight/_view/end_start_including_payloads?include_docs=true&startkey=["+((new Date()).getTime()/1000)+"]", function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                var data = JSON.parse(body);
+
+                if(data.rows.length) {
+                    for(var k in data.rows) {
+                        var id = data.rows[k].id.substr(0,4);
+                        var doc = data.rows[k].doc;
+
+                        if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime() && id == opts.args) {
+                            var msg = ["Flight info for", [ctx.color.SBJ, doc.name]];
+                            var lat = ctx.format_number(doc.launch.location.latitude, 5);
+                            var lng = ctx.format_number(doc.launch.location.longitude, 5);
+
+                            // number of payloads
+                            msg.push([ctx.color.EXT, "("+doc.payloads.length+" payload"+(doc.payloads.length > 1 ? 's':'')+")"], "-");
+
+                            // time
+                            msg.push("Launch time", [ctx.color.SBJ, moment(new Date(doc.launch.time)).calendar()]),
+
+                            // place
+                            msg.push("from");
+
+                            // try to reverse geocode the position
+                            req(ctx.url_geocode + lat + ',' + lng, function(error, response, body) {
+                                if (!error && response.statusCode == 200) {
+                                    var data = JSON.parse(body);
+
+                                    if(data.results.length) {
+                                        var address = data.results[0].formatted_address;
+                                        msg.push([ctx.color.SBJ, address]);
+                                    }
+                                }
+
+                                msg.push([ctx.color.EXT, "("+lat+","+lng+")"]);
+
+                                ctx.respond(opts.channel, opts.from, msg);
+                            });
+
+                            return;
+                        }
+                    }
+
+                    ctx.respond(opts.channel, opts.from, "Can't find that flight doc");
+                }
+                else {
+                    ctx.respond(opts.channel, opts.from, "There are no flights currently :(");
+                }
+            }
+
+        });
+    },
+
+    handle_payloads: function(opts) {
+        var ctx = this;
+
+        req("http://habitat.habhub.org/habitat/_design/flight/_view/end_start_including_payloads?include_docs=true&startkey=["+((new Date()).getTime()/1000)+"]", function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                var data = JSON.parse(body);
+
+                if(data.rows.length) {
+                    var found = false;
+
+                    for(var k in data.rows) {
+                        var id = data.rows[k].id.substr(0,4);
+                        var doc = data.rows[k].doc;
+
+                        if(doc.type == "payload_configuration" && id == opts.args) {
+                            found = true;
+
+                            var msg = ["Payload",[ctx.color.SBJ, doc.name],"-"];
+
+                            if(doc.transmissions.length == 0) {
+                                msg.push("no transmissions");
+                            }
+                            else {
+                                xref = doc.transmissions[0];
+
+                                msg.push([ctx.color.SBJ, (xref.frequency / 1000000) + " MHz " + xref.mode]);
+
+                                switch(xref.modulation) {
+                                    case "DominoEX":
+                                        msg.push([ctx.color.SBJ, xref.modulation], "with speed", [ctx.color.SBJ, xref.speed]);
+                                        break;
+                                    case "Hellschreiber":
+                                        msg.push([ctx.color.SBJ, xref.modulation + " " + xref.variant]);
+                                        break;
+                                    case "RTTY":
+                                        msg.push([ctx.color.SBJ, xref.modulation + " " + xref.baud + "/" + xref.shift + "Hz " + xref.encoding + " " + xref.parity + " " + xref.stop]);
+                                        break;
+                                    default: break;
+
+                                }
+                            }
+
+
+                            ctx.respond(opts.channel, opts.from, msg);
+                        }
+                    }
+
+                    if(!found) ctx.respond(opts.channel, opts.from, "Can't find that flight doc");
+                }
+                else {
+                    ctx.respond(opts.channel, opts.from, "There are no flights currently :(");
+                }
+            }
+
+        });
     }
 }
 
