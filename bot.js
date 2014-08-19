@@ -235,5 +235,5 @@ function handle_whereis(opts) {
 
 function handle_track(opts) {
     var url = url_hmt_vehicle + opts.args.split(/[, ;]/).filter(function(val) { return val != "";}).join(";")
-    respond(opts.channel, opts.from, ["Hero you go -", [COLOR_URL, url]]);
+    respond(opts.channel, opts.from, ["Here you go -", [COLOR_URL, url]]);
 };
