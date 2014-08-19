@@ -3,239 +3,254 @@ var irc = require('irc');
 var req = require('request');
 var moment = require('moment');
 
-var storage = {
-    hysplit: {
-        timestamp: 0,
-        data: null
+var bot = {
+    url_geocode: "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&key={APIKEY}&latlng=",
+    url_hmt_vehicle: "http://habhub.org/mt/?filter=",
+    storage: {
+        hysplit: {
+            timestamp: 0,
+            data: null
+        },
+        tracker: {
+            timestamp: 0,
+            data: null
+        }
     },
-    tracker: {
-        timestamp: 0,
-        data: null
-    }
-};
-var init_complete = false;
+    color: {
+        SBJ:'magenta',
+        EXT:'light_blue',
+        URL:'dark_blue'
+    },
 
-COLOR_SBJ = 'magenta';
-COLOR_EXT = 'light_blue';
-COLOR_URL = 'dark_blue';
+    client: null,
 
-url_geocode = "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&key=" + config.google_api_key +"&latlng=";
-url_hmt_vehicle = "http://habhub.org/mt/?filter=";
+    init: function(config) {
+        if(!config) return;
 
-function init() {
-    if(init_complete) return;
-    init_complete = true;
+        this.config = config;
 
-    // fetch latest positions from the tracker
-    fetch_latest_positions();
-}
+        // set api key
+        this.url_geocode = this.url_geocode.replace("{APIKEY}", config.google_api_key);
 
-function fetch_latest_positions() {
-req("http://spacenear.us/tracker/datanew.php?mode=latest&type=positions&format=json&max_positions=0&position_id=0", function(error, response, body) {
-    if (!error && response.statusCode == 200) {
-        storage.tracker.timestamp = (new Date()).getTime();
-        var data = JSON.parse(body).positions.position;
+        // init client
+        this.client = new irc.Client(config.server, config.nick, config);
+        var command_regex = /^\!([a-z]+) ?(.*)?$/;
 
-        var obj = {};
-        for(var k in data) {
-            var name = data[k].vehicle.toLowerCase();
+        // handle commands
+        var ctx = this;
 
-            obj[name] = data[k];
-            obj[name]['gps_time'] = new Date(obj[name]['gps_time'] + "Z");
-            obj[name]['server_time'] = new Date(obj[name]['server_time'] + "Z");
+        this.client.addListener('message', function (from, to, message) {
+            if(to[0] != "#") return;
 
-            if(storage.tracker.data) {
-                if(!(name in storage.tracker.data)) {
-                    notify(["New vehicle on the map:", [COLOR_SBJ, name], "-", [COLOR_URL, url_hmt_vehicle + name]]);
-                } else if(storage.tracker.data[name].gps_time.getTime() + 21600000 < obj[name].gps_time.getTime())  {
-                    notify(["New position from", [COLOR_SBJ, name], "after", [COLOR_SBJ, moment(storage.tracker.data[name].gps_time).fromNow(true)], "silence", "-", [COLOR_URL, url_hmt_vehicle + name]]);
+            var match = message.match(command_regex);
+
+            if(match && match.length) {
+                var cmd = match[1];
+                var args = (match[2] === undefined) ? "" : match[2];
+                var opts = {
+                        "cmd": cmd,
+                        "from": from,
+                        "args": args,
+                        "channel": to
+                };
+
+                switch(cmd) {
+                    case "hysplit": ctx.handle_hysplit(opts); break;
+                    case "track": ctx.handle_track(opts); break;
+
+                    case "tracker": ctx.respond(to, from, [
+                                            "Here you go -",
+                                            [ctx.color.URL, "http://habhub.org/mt/"]
+                                        ]); break;
+
+                    case "wiki": ctx.respond(to, from, [
+                                         "Here you go -",
+                                         [ctx.color.URL, "http://ukhas.org.uk"]
+                                     ]); break;
+
+                    case "ping": ctx.handle_ping(opts); break;
+                    case "whereis": ctx.handle_whereis(opts); break;
+
+                    default: break;
                 }
+
             }
-        }
-        storage.tracker.data = obj;
-    }
-    else {
-        console.log(error);
-    }
-
-    setTimeout(fetch_latest_positions, 30000);
-});
-}
-
-var bot = new irc.Client(config.server, config.nick, config);
-var command_regex = /^\!([a-z]+) ?(.*)?$/;
-
-// handle commands
-bot.addListener('message', function (from, to, message) {
-    if(to[0] != "#") return;
-
-    var match = message.match(command_regex);
-
-    if(match && match.length) {
-        var cmd = match[1];
-        var args = (match[2] === undefined) ? "" : match[2];
-
-        switch(cmd) {
-            case "hysplit": handle_hysplit({
-                "cmd": cmd,
-                "from": from,
-                "args": args,
-                "channel": to
-            }); break;
-
-            case "track": handle_track({
-                "cmd": cmd,
-                "from": from,
-                "args": args,
-                "channel": to
-            }); break;
-
-            case "tracker": respond(to, from, [
-                                    "Here you go -",
-                                    [COLOR_URL, "http://habhub.org/mt/"]
-                                ]); break;
-
-            case "wiki": respond(to, from, [
-                                 "Here you go -",
-                                 [COLOR_URL, "http://ukhas.org.uk"]
-                             ]); break;
-
-            case "ping": handle_ping({
-                "cmd": cmd,
-                "from": from,
-                "args": args,
-                "channel": to
-            }); break;
-
-            case "whereis": handle_whereis({
-                "cmd": cmd,
-                "from": from,
-                "args": args,
-                "channel": to
-            }); break;
-
-            default: break;
-        }
-
-    }
-});
-
-bot.addListener('join', function(chan, nick, msg ) {
-    if(nick.indexOf(config.nick) == 0) init();
-});
-
-bot.addListener('error', function(message) {
-        console.log('error: ', message);
-});
-
-// wrapper function for nice looking reponses
-
-function respond(dest, to, msg) {
-    var resp = (to) ? irc.colors.wrap(COLOR_SBJ, to) + ": " : "";
-
-    if(typeof msg == 'string') {
-        resp += msg;
-    } else {
-        for(var k in msg) {
-            if(typeof msg[k] == 'string') {
-                resp += msg[k] + ' ';
-            } else {
-                resp += irc.colors.wrap(msg[k][0], msg[k][1]) + ' ';
-            }
-        }
-    }
-    bot.say(dest, resp);
-}
-
-// notify
-
-function notify(msg) {
-    for(var k in config.channels) {
-        respond(config.channels[k], null, msg);
-    }
-}
-
-// util
-
-function format_number(num, decimal_places) {
-        return Math.floor(num * Math.pow(10, decimal_places)) / Math.pow(10,decimal_places);
-}
-
-// handle hysplit
-
-function handle_hysplit(options) {
-    if(storage.hysplit.timestamp + 30000 > (new Date()).getTime()) {
-                reply_hysplit(options);
-    }
-    else {
-        req('http://spacenear.us/tracker/datanew.php?type=hysplit&format=json', function (error, response, body) {
-            if (!error && response.statusCode == 200) {
-                storage.hysplit.timestamp = (new Date()).getTime();
-                storage.hysplit.data = JSON.parse(body);
-
-                for(var k in storage.hysplit.data) storage.hysplit.data[k.toLowerCase()] = storage.hysplit.data[k];
-
-                reply_hysplit(options);
-            }
-        })
-    }
-};
-
-function reply_hysplit(opts) {
-    if(opts.args in storage.hysplit.data) {
-        respond(opts.channel, opts.from, [
-                "HYSPLIT for",
-                [COLOR_SBJ, opts.args],
-                '-',
-                [COLOR_URL, storage.hysplit.data[opts.args].url_gif]
-                ]);
-    }
-    else {
-        respond(opts.channel, opts.from, "No HYSPLIT for that callsign");
-    }
-}
-
-// handle pong
-
-function handle_ping(opts) {
-    if(storage.tracker.data && opts.args.toLowerCase() in storage.tracker.data) {
-        var timestamp = storage.tracker.data[opts.args.toLowerCase()].gps_time;
-
-        respond(opts.channel, opts.from, ["Last contact was", [COLOR_SBJ, moment(timestamp).fromNow()]]);
-    }
-    else {
-        respond(opts.channel, opts.from, ["No contact from", [COLOR_SBJ, opts.args]]);
-    }
-};
-
-function handle_whereis(opts) {
-    if(storage.tracker.data && opts.args.toLowerCase() in storage.tracker.data) {
-        var name = opts.args.toLowerCase();
-        var lat = format_number(storage.tracker.data[name].gps_lat, 5);
-        var lng = format_number(storage.tracker.data[name].gps_lon, 5);
-        var alt = format_number(storage.tracker.data[name].gps_alt, 0);
-
-        req(url_geocode + lat + ',' + lng, function(error, response, body) {
-            if (!error && response.statusCode == 200) {
-                var data = JSON.parse(body);
-                if(data.results.length) {
-                    var address = data.results[0].formatted_address;
-                    respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [COLOR_SBJ, address], [COLOR_EXT, '('+lat+','+lng+')'], "at", [COLOR_SBJ, alt + " meters"]]);
-                }
-                return;
-            }
-
-            respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [COLOR_SBJ, lat+','+lng], "at", [COLOR_SBJ, alt + " meters"]]);
         });
 
+        // additional handlers
+        this.client.addListener('join', function(chan, nick, msg) {
+            if(nick.indexOf(ctx.config.nick) == 0) ctx.init_fetch();
+        });
 
-    }
-    else {
-        respond(opts.channel, opts.from, "I haven't got a clue");
-    }
-};
+        this.client.addListener('error', function(message) {
+                console.log('error: ', message);
+        });
+    },
 
-function handle_track(opts) {
-    var url = url_hmt_vehicle + opts.args.split(/[, ;]/).filter(function(val) { return val != "";}).join(";")
-    respond(opts.channel, opts.from, ["Here you go -", [COLOR_URL, url]]);
-};
+    init_fetch_complete: false,
+
+    init_fetch: function () {
+        if(this.init_fetch_complete) return;
+        this.init_fetch_complete = true;
+
+        // fetch latest positions from the tracker
+        this.fetch_latest_positions();
+    },
+
+    fetch_latest_positions: function() {
+        var ctx = this;
+
+        req("http://spacenear.us/tracker/datanew.php?mode=latest&type=positions&format=json&max_positions=0&position_id=0", function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                ctx.storage.tracker.timestamp = (new Date()).getTime();
+                var data = JSON.parse(body).positions.position;
+
+                var obj = {};
+                for(var k in data) {
+                    var name = data[k].vehicle.toLowerCase();
+
+                    obj[name] = data[k];
+                    obj[name]['gps_time'] = new Date(obj[name]['gps_time'] + "Z");
+                    obj[name]['server_time'] = new Date(obj[name]['server_time'] + "Z");
+
+                    if(ctx.storage.tracker.data) {
+                        if(!(name in ctx.storage.tracker.data)) {
+                            ctx.notify(["New vehicle on the map:", [ctx.color.SBJ, name], "-", [ctx.color.URL, ctx.url_hmt_vehicle + name]]);
+                        } else if(ctx.storage.tracker.data[name].gps_time.getTime() + 21600000 < obj[name].gps_time.getTime())  {
+                            ctx.notify(["New position from", [ctx.color.SBJ, name], "after", [ctx.color.SBJ, moment(ctx.storage.tracker.data[name].gps_time).fromNow(true)], "silence", "-", [ctx.color.URL, ctx.url_hmt_vehicle + name]]);
+                        }
+                    }
+                }
+                ctx.storage.tracker.data = obj;
+            }
+            else {
+                console.log(error);
+            }
+
+            setTimeout(function() { ctx.fetch_latest_positions() }, 5000);
+        });
+    },
+
+    // wrapper function for nice looking reponses
+
+    respond: function(dest, to, msg) {
+        var resp = (to) ? irc.colors.wrap(this.color.SBJ, to) + ": " : "";
+
+        if(typeof msg == 'string') {
+            resp += msg;
+        } else {
+            for(var k in msg) {
+                if(typeof msg[k] == 'string') {
+                    resp += msg[k] + ' ';
+                } else {
+                    resp += irc.colors.wrap(msg[k][0], msg[k][1]) + ' ';
+                }
+            }
+        }
+        this.client.say(dest, resp);
+    },
+
+    // notify
+
+    notify: function(msg) {
+        for(var k in config.channels) {
+            respond(config.channels[k], null, msg);
+        }
+    },
+
+    // util
+
+    ts: function(text) {
+        return (new Date(text)).getTime();
+    },
+
+    format_number: function(num, decimal_places) {
+            return Math.floor(num * Math.pow(10, decimal_places)) / Math.pow(10,decimal_places);
+    },
+
+    // handle hysplit
+
+    handle_hysplit: function(options) {
+        if(this.storage.hysplit.timestamp + 30000 > (new Date()).getTime()) {
+                    this.reply_hysplit(options);
+        }
+        else {
+            var ctx = this;
+
+            req('http://spacenear.us/tracker/datanew.php?type=hysplit&format=json', function (error, response, body) {
+                if (!error && response.statusCode == 200) {
+                    ctx.storage.hysplit.timestamp = (new Date()).getTime();
+                    ctx.storage.hysplit.data = JSON.parse(body);
+
+                    for(var k in ctx.storage.hysplit.data) ctx.storage.hysplit.data[k.toLowerCase()] = ctx.storage.hysplit.data[k];
+
+                    ctx.reply_hysplit(options);
+                }
+            })
+        }
+    },
+
+    reply_hysplit: function(opts) {
+        if(opts.args in this.storage.hysplit.data) {
+            this.respond(opts.channel, opts.from, [
+                    "HYSPLIT for",
+                    [this.color.SBJ, opts.args],
+                    '-',
+                    [this.color.URL, this.storage.hysplit.data[opts.args].url_gif]
+                    ]);
+        }
+        else {
+            this.respond(opts.channel, opts.from, "No HYSPLIT for that callsign");
+        }
+    },
+
+    // handle pong
+
+    handle_ping: function(opts) {
+        if(this.storage.tracker.data && opts.args.toLowerCase() in this.storage.tracker.data) {
+            var timestamp = this.storage.tracker.data[opts.args.toLowerCase()].gps_time;
+
+            this.respond(opts.channel, opts.from, ["Last contact was", [this.color.SBJ, moment(timestamp).fromNow()]]);
+        }
+        else {
+            this.respond(opts.channel, opts.from, ["No contact from", [this.color.SBJ, opts.args]]);
+        }
+    },
+
+    handle_whereis: function(opts) {
+        if(this.storage.tracker.data && opts.args.toLowerCase() in this.storage.tracker.data) {
+            var name = opts.args.toLowerCase();
+            var lat = this.format_number(this.storage.tracker.data[name].gps_lat, 5);
+            var lng = this.format_number(this.storage.tracker.data[name].gps_lon, 5);
+            var alt = this.format_number(this.storage.tracker.data[name].gps_alt, 0);
+            var ctx = this;
+
+            req(this.url_geocode + lat + ',' + lng, function(error, response, body) {
+                if (!error && response.statusCode == 200) {
+                    var data = JSON.parse(body);
+                    if(data.results.length) {
+                        var address = data.results[0].formatted_address;
+                        ctx.respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [ctx.color.SBJ, address], [ctx.color.EXT, '('+lat+','+lng+')'], "at", [ctx.color.SBJ, alt + " meters"]]);
+                    }
+                    return;
+                }
+
+                ctx.respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [ctx.color.SBJ, lat+','+lng], "at", [ctx.color.SBJ, alt + " meters"]]);
+            });
+
+
+        }
+        else {
+            this.respond(opts.channel, opts.from, "I haven't got a clue");
+        }
+    },
+
+    handle_track: function(opts) {
+        var url = this.url_hmt_vehicle + opts.args.split(/[, ;]/).filter(function(val) { return val != "";}).join(";")
+        this.respond(opts.channel, opts.from, ["Here you go -", [this.color.URL, url]]);
+    }
+}
+
+module.exports = bot;
+
+if(module.parent == null) bot.init(config);
