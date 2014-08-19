@@ -163,7 +163,7 @@ var bot = {
 
     notify: function(msg) {
         for(var k in config.channels) {
-            respond(config.channels[k], null, msg);
+            this.respond(config.channels[k], null, msg);
         }
     },
 
