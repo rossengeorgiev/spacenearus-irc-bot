@@ -20,6 +20,7 @@ COLOR_EXT = 'light_blue';
 COLOR_URL = 'dark_blue';
 
 url_geocode = "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&key=" + config.google_api_key +"&latlng=";
+url_hmt_vehicle = "http://habhub.org/mt/?filter=";
 
 function init() {
     if(init_complete) return;
@@ -45,9 +46,9 @@ req("http://spacenear.us/tracker/datanew.php?mode=latest&type=positions&format=j
 
             if(storage.tracker.data) {
                 if(!(name in storage.tracker.data)) {
-                    notify(["New vehicle on the map:", [COLOR_SBJ, name]]);
+                    notify(["New vehicle on the map:", [COLOR_SBJ, name], "-", [COLOR_URL, url_hmt_vehicle + name]]);
                 } else if(storage.tracker.data[name].gps_time.getTime() + 21600000 < obj[name].gps_time.getTime())  {
-                    notify(["New position from", [COLOR_SBJ, name], "after", [COLOR_SBJ, moment(storage.tracker.data[name].gps_time).fromNow(true)], "silence"]);
+                    notify(["New position from", [COLOR_SBJ, name], "after", [COLOR_SBJ, moment(storage.tracker.data[name].gps_time).fromNow(true)], "silence", "-", [COLOR_URL, url_hmt_vehicle + name]]);
                 }
             }
         }
@@ -74,6 +75,13 @@ bot.addListener('message', function (from, to, message) {
 
         switch(cmd) {
             case "hysplit": handle_hysplit({
+                "cmd": cmd,
+                "from": from,
+                "args": args,
+                "channel": to
+            }); break;
+
+            case "track": handle_track({
                 "cmd": cmd,
                 "from": from,
                 "args": args,
@@ -223,4 +231,9 @@ function handle_whereis(opts) {
     else {
         respond(opts.channel, opts.from, "I haven't got a clue");
     }
+};
+
+function handle_track(opts) {
+    var url = url_hmt_vehicle + opts.args.split(/[, ;]/).filter(function(val) { return val != "";}).join(";")
+    respond(opts.channel, opts.from, ["Hero you go -", [COLOR_URL, url]]);
 };
