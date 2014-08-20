@@ -274,7 +274,8 @@ var bot = {
 
 
                     for(var k in data.rows) {
-                        var id = data.rows[k].id.substr(0,4);
+                        var id_len = data.rows[k].id.length;
+                        var id = data.rows[k].id.substr(id_len - 4);
                         var doc = data.rows[k].doc;
 
                         if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime()) {
@@ -305,7 +306,8 @@ var bot = {
 
                 if(data.rows.length) {
                     for(var k in data.rows) {
-                        var id = data.rows[k].id.substr(0,4);
+                        var id_len = data.rows[k].id.length;
+                        var id = data.rows[k].id.substr(id_len - 4);
                         var doc = data.rows[k].doc;
 
                         if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime() && id == opts.args) {
@@ -363,7 +365,8 @@ var bot = {
                     var found = false;
 
                     for(var k in data.rows) {
-                        var id = data.rows[k].id.substr(0,4);
+                        var id_len = data.rows[k].id.length;
+                        var id = data.rows[k].id.substr(id_len - 4);
                         var doc = data.rows[k].doc;
 
                         if(doc.type == "payload_configuration" && id == opts.args) {
