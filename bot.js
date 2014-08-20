@@ -124,9 +124,22 @@ var bot = {
 
                     if(ctx.storage.tracker.data) {
                         if(!(name in ctx.storage.tracker.data)) {
-                            ctx.notify(["New vehicle on the map:", [ctx.color.SBJ, name], "-", [ctx.color.URL, ctx.url_hmt_vehicle + name]]);
+                            ctx.notify([
+                                "New vehicle on the map:",
+                                [ctx.color.SBJ, obj[name].vehicle],
+                                "-",
+                                [ctx.color.URL, ctx.url_hmt_vehicle + obj[name].vehicle]
+                            ]);
                         } else if(ctx.storage.tracker.data[name].gps_time.getTime() + 21600000 < obj[name].gps_time.getTime())  {
-                            ctx.notify(["New position from", [ctx.color.SBJ, name], "after", [ctx.color.SBJ, moment(ctx.storage.tracker.data[name].gps_time).fromNow(true)], "silence", "-", [ctx.color.URL, ctx.url_hmt_vehicle + name]]);
+                            ctx.notify([
+                                "New position from",
+                                [ctx.color.SBJ, obj[name].vehicle],
+                                "after",
+                                [ctx.color.SBJ, moment(ctx.storage.tracker.data[name].gps_time).fromNow(true)],
+                                "silence",
+                                "-",
+                                [ctx.color.URL, ctx.url_hmt_vehicle + obj[name].vehicle]
+                            ]);
                         }
                     }
                 }
