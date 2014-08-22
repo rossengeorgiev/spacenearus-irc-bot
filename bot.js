@@ -3,6 +3,8 @@ var irc = require('irc');
 var req = require('request');
 var moment = require('moment');
 
+moment.locale("en-gb");
+
 var bot = {
     url_geocode: "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&result_type=sublocality|administrative_area_level_2|administrative_area_level_1|country&result_type=sublocality&key={APIKEY}&latlng=",
     url_geocode_ocean: "http://api.geonames.org/oceanJSON?lat={LAT}&lng={LNG}&username={USER}",
