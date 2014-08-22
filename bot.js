@@ -4,7 +4,7 @@ var req = require('request');
 var moment = require('moment');
 
 var bot = {
-    url_geocode: "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&key={APIKEY}&latlng=",
+    url_geocode: "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&result_type=sublocality|administrative_area_level_2|administrative_area_level_1|country&result_type=sublocality&key={APIKEY}&latlng=",
     url_geocode_ocean: "http://api.geonames.org/oceanJSON?lat={LAT}&lng={LNG}&username={USER}",
     url_hmt_vehicle: "http://habhub.org/mt/?filter=",
     storage: {
@@ -192,6 +192,39 @@ var bot = {
             return Math.floor(num * Math.pow(10, decimal_places)) / Math.pow(10,decimal_places);
     },
 
+    // reverse geocode
+    //
+    resolve_location: function(lat, lng, callback) {
+        var ctx = this;
+
+        req(this.url_geocode + lat + ',' + lng, function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                var data = JSON.parse(body);
+
+                if(data.results.length) {
+                    callback(data.results[0].formatted_address);
+                }
+                // maybe position is over an ocean?
+                else {
+                    req(ctx.url_geocode_ocean.replace("{LAT}",lat).replace("{LNG}",lng), function(error, response, body) {
+                        if (!error && response.statusCode == 200) {
+                            var data = JSON.parse(body);
+
+                            if("ocean" in data) {
+                                callback(data.ocean.name);
+                                return;
+                            }
+                        }
+                        callback(null);
+                    });
+                }
+                return;
+            }
+
+            callback(null);
+        });
+    },
+
     // handle hysplit
 
     handle_hysplit: function(options) {
@@ -244,41 +277,24 @@ var bot = {
     handle_whereis: function(opts) {
         if(this.storage.tracker.data && opts.args.toLowerCase() in this.storage.tracker.data) {
             var name = opts.args.toLowerCase();
-            var lat = this.format_number(this.storage.tracker.data[name].gps_lat, 5);
-            var lng = this.format_number(this.storage.tracker.data[name].gps_lon, 5);
-            var alt = this.format_number(this.storage.tracker.data[name].gps_alt, 0);
+            var lat = this.storage.tracker.data[name].gps_lat;
+            var lng = this.storage.tracker.data[name].gps_lon;
+            var alt = this.storage.tracker.data[name].gps_alt;
             var ctx = this;
 
-            req(this.url_geocode + lat + ',' + lng, function(error, response, body) {
-                if (!error && response.statusCode == 200) {
-                    var data = JSON.parse(body);
+            this.resolve_location(lat,lng, function(name) {
+                var msg = [ (alt>1000)?"Over":"Near" ];
 
-                    if(data.results.length) {
-                        var address = data.results[0].formatted_address;
-                        ctx.respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [ctx.color.SBJ, address], [ctx.color.EXT, '('+lat+','+lng+')'], "at", [ctx.color.SBJ, alt + " meters"]]);
-                        return;
-                    }
-                    // maybe position is over an ocean?
-                    else {
-                        req(ctx.url_geocode_ocean.replace("{LAT}",lat).replace("{LNG}",lng), function(error, response, body) {
-                            if (!error && response.statusCode == 200) {
-                                var data = JSON.parse(body);
-
-                                if("ocean" in data) {
-                                    ctx.respond(opts.channel, opts.from, ["Over", [ctx.color.SBJ, data.ocean.name], [ctx.color.EXT, '('+lat+','+lng+')'], "at", [ctx.color.SBJ, alt + " meters"]]);
-                                }
-                                else {
-                                    ctx.respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [ctx.color.SBJ, lat+','+lng], "at", [ctx.color.SBJ, alt + " meters"]]);
-                                }
-                            }
-                        });
-                        return;
-                    }
+                if(name) {
+                    msg.push([ctx.color.SBJ, name], [ctx.color.EXT, '('+lat+','+lng+')']);
+                }
+                else {
+                    msg.push([ctx.color.SBJ, lat+','+lng]);
                 }
 
-                ctx.respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [ctx.color.SBJ, lat+','+lng], "at", [ctx.color.SBJ, alt + " meters"]]);
+                msg.push("at", [ctx.color.SBJ, ctx.format_number(alt,0) + " meters"]);
+                ctx.respond(opts.channel, opts.from, msg);
             });
-
 
         }
         else {
@@ -357,14 +373,9 @@ var bot = {
                             msg.push("from");
 
                             // try to reverse geocode the position
-                            req(ctx.url_geocode + lat + ',' + lng, function(error, response, body) {
-                                if (!error && response.statusCode == 200) {
-                                    var data = JSON.parse(body);
-
-                                    if(data.results.length) {
-                                        var address = data.results[0].formatted_address;
-                                        msg.push([ctx.color.SBJ, address]);
-                                    }
+                            ctx.resolve_location(lat, lng, function(name) {
+                                if(name) {
+                                    msg.push([ctx.color.SBJ, name]);
                                 }
 
                                 msg.push([ctx.color.EXT, "("+lat+","+lng+")"]);
