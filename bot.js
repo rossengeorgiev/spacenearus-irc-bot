@@ -83,6 +83,8 @@ var bot = {
                     case "dial":
                                    ctx.handle_payloads(opts); break;
 
+                    case "window": ctx.handle_window(opts); break;
+
                     default: break;
                 }
 
@@ -494,7 +496,59 @@ var bot = {
             }
 
         });
-    }
+    },
+
+    handle_window: function(opts) {
+        var ctx = this;
+
+        req("http://habitat.habhub.org/habitat/_design/flight/_view/end_start_including_payloads?include_docs=true&startkey=["+((new Date()).getTime()/1000)+"]", function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                var data = JSON.parse(body);
+
+                if(data.rows.length) {
+                    var flight_id = null;
+
+                    // if the argument is a callsign, try to find the payload_configuration for flight_id
+                    for(var k in data.rows) {
+                        var xref = data.rows[k];
+
+                        if(xref.doc.type == "payload_configuration" && opts.args.toLowerCase() == xref.doc.name.toLowerCase()) {
+                            flight_id = xref.id;
+                            break;
+                        }
+                    }
+
+                    for(var k in data.rows) {
+                        var id_len = data.rows[k].id.length;
+                        var id = data.rows[k].id;
+                        var doc = data.rows[k].doc;
+
+                        var match = (flight_id != null) ? id == flight_id : id.substr(id_len - 4) == opts.args;
+
+                        if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime() && match) {
+                            ctx.respond(opts.channel, opts.from, [
+                                "Flight window for",
+                                [ctx.color.SBJ, doc.name],
+                                [ctx.color.EXT, "(" + id.substr(id_len - 4) + ")"],
+                                "is from",
+                                [ctx.color.SBJ, moment(new Date(doc.start)).calendar()],
+                                "to",
+                                [ctx.color.SBJ, moment(new Date(doc.end)).calendar()],
+                            ]);
+
+                            return;
+                        }
+                    }
+
+                    ctx.respond(opts.channel, opts.from, "Can't find a flight doc matching your query");
+                }
+                else {
+                    ctx.respond(opts.channel, opts.from, "There are no flights currently :(");
+                }
+            }
+
+        });
+    },
 }
 
 module.exports = bot;
