@@ -70,11 +70,8 @@ var bot = {
                                             [ctx.color.URL, "http://habhub.org/mt/"]
                                         ]); break;
 
-                    case "wiki": ctx.respond(to, from, [
-                                         "Here you go -",
-                                         [ctx.color.URL, "http://ukhas.org.uk"]
-                                     ]); break;
 
+                    case "wiki": ctx.handle_wiki(opts); break;
                     case "ping": ctx.handle_ping(opts); break;
                     case "whereis": ctx.handle_whereis(opts); break;
 
@@ -300,6 +297,32 @@ var bot = {
         else {
             this.respond(opts.channel, opts.from, "I haven't got a clue");
         }
+    },
+
+    handle_wiki: function(opts) {
+        var ctx = this;
+
+        req("http://ukhas.org.uk/start?do=search&id="+opts.args, function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                var match = body.match(/search_quickhits.*ul/g);
+                if(match) {
+                    match = match[0].match(/<a href="(.*?)".*?>(.*?)<\/a>/g);
+
+                    if(match.length < 4) {
+                        for(var k in match) {
+                            submatch = match[k].match(/<a href="(.*?)".*?>(.*?)<\/a>/);
+                            ctx.respond(opts.channel, opts.from, ["Wiki page", [ctx.color.SBJ, submatch[2]], "-", [ctx.color.URL, "http://ukhas.org.uk" + submatch[1]]]);
+                        }
+                    } else {
+                        ctx.respond(opts.channel, opts.from, ["Found", [ctx.color.SBJ, match.length], "results for you query"]);
+                    }
+                } else {
+                    ctx.respond(opts.channel, opts.from, "No results for your query");
+                }
+            } else {
+                ctx.respond(opts.channel, opts.from, "Error occured while running your query");
+            }
+        });
     },
 
     handle_track: function(opts) {
