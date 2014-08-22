@@ -250,11 +250,12 @@ var bot = {
             req(this.url_geocode + lat + ',' + lng, function(error, response, body) {
                 if (!error && response.statusCode == 200) {
                     var data = JSON.parse(body);
+
                     if(data.results.length) {
                         var address = data.results[0].formatted_address;
                         ctx.respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [ctx.color.SBJ, address], [ctx.color.EXT, '('+lat+','+lng+')'], "at", [ctx.color.SBJ, alt + " meters"]]);
+                        return;
                     }
-                    return;
                 }
 
                 ctx.respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [ctx.color.SBJ, lat+','+lng], "at", [ctx.color.SBJ, alt + " meters"]]);
