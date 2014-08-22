@@ -77,7 +77,11 @@ var bot = {
 
                     case "flights": ctx.handle_flights(opts); break;
                     case "flight": ctx.handle_flight(opts); break;
-                    case "payloads": ctx.handle_payloads(opts); break;
+
+                    case "payloads":
+                    case "payload":
+                    case "dial":
+                                   ctx.handle_payloads(opts); break;
 
                     default: break;
                 }
@@ -376,13 +380,27 @@ var bot = {
                 var data = JSON.parse(body);
 
                 if(data.rows.length) {
+                    var flight_id = null;
+
+                    // if the argument is a callsign, try to find the payload_configuration for flight_id
+                    for(var k in data.rows) {
+                        var xref = data.rows[k];
+
+                        if(xref.doc.type == "payload_configuration" && opts.args.toLowerCase() == xref.doc.name.toLowerCase()) {
+                            flight_id = xref.id;
+                            break;
+                        }
+                    }
+
                     for(var k in data.rows) {
                         var id_len = data.rows[k].id.length;
-                        var id = data.rows[k].id.substr(id_len - 4);
+                        var id = data.rows[k].id;
                         var doc = data.rows[k].doc;
 
-                        if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime() && id == opts.args) {
-                            var msg = ["Flight info for", [ctx.color.SBJ, doc.name]];
+                        var match = (flight_id != null) ? id == flight_id : id.substr(id_len - 4) == opts.args;
+
+                        if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime() && match) {
+                            var msg = ["Flight", [ctx.color.EXT, "(" + id.substr(id_len - 4) + "):"], [ctx.color.SBJ, doc.name]];
                             var lat = ctx.format_number(doc.launch.location.latitude, 5);
                             var lng = ctx.format_number(doc.launch.location.longitude, 5);
 
@@ -410,7 +428,7 @@ var bot = {
                         }
                     }
 
-                    ctx.respond(opts.channel, opts.from, "Can't find that flight doc");
+                    ctx.respond(opts.channel, opts.from, "Can't find a flight doc matching your query");
                 }
                 else {
                     ctx.respond(opts.channel, opts.from, "There are no flights currently :(");
@@ -435,10 +453,10 @@ var bot = {
                         var id = data.rows[k].id.substr(id_len - 4);
                         var doc = data.rows[k].doc;
 
-                        if(doc.type == "payload_configuration" && id == opts.args) {
+                        if(doc.type == "payload_configuration" && (id == opts.args || doc.name.toLowerCase() == opts.args.toLowerCase())) {
                             found = true;
 
-                            var msg = ["Payload",[ctx.color.SBJ, doc.name],"-"];
+                            var msg = ["Payload",[ctx.color.SBJ, doc.name], [ctx.color.EXT, "("+id+")"],"-"];
 
                             if(doc.transmissions.length == 0) {
                                 msg.push("no transmissions");
@@ -468,7 +486,7 @@ var bot = {
                         }
                     }
 
-                    if(!found) ctx.respond(opts.channel, opts.from, "Can't find that flight doc");
+                    if(!found) ctx.respond(opts.channel, opts.from, "Can't find a flight doc matching your query");
                 }
                 else {
                     ctx.respond(opts.channel, opts.from, "There are no flights currently :(");
