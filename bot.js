@@ -5,6 +5,7 @@ var moment = require('moment');
 
 var bot = {
     url_geocode: "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&key={APIKEY}&latlng=",
+    url_geocode_ocean: "http://api.geonames.org/oceanJSON?lat={LAT}&lng={LNG}&username={USER}",
     url_hmt_vehicle: "http://habhub.org/mt/?filter=",
     storage: {
         hysplit: {
@@ -36,6 +37,7 @@ var bot = {
 
         // set api key
         this.url_geocode = this.url_geocode.replace("{APIKEY}", config.google_api_key);
+        this.url_geocode_ocean = this.url_geocode_ocean.replace("{USER}", config.geonames_api_user);
 
         // init client
         this.client = new irc.Client(config.server, config.nick, config);
@@ -254,6 +256,22 @@ var bot = {
                     if(data.results.length) {
                         var address = data.results[0].formatted_address;
                         ctx.respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [ctx.color.SBJ, address], [ctx.color.EXT, '('+lat+','+lng+')'], "at", [ctx.color.SBJ, alt + " meters"]]);
+                        return;
+                    }
+                    // maybe position is over an ocean?
+                    else {
+                        req(ctx.url_geocode_ocean.replace("{LAT}",lat).replace("{LNG}",lng), function(error, response, body) {
+                            if (!error && response.statusCode == 200) {
+                                var data = JSON.parse(body);
+
+                                if("ocean" in data) {
+                                    ctx.respond(opts.channel, opts.from, ["Over", [ctx.color.SBJ, data.ocean.name], [ctx.color.EXT, '('+lat+','+lng+')'], "at", [ctx.color.SBJ, alt + " meters"]]);
+                                }
+                                else {
+                                    ctx.respond(opts.channel, opts.from, [(alt>1000)?"Over":"Near", [ctx.color.SBJ, lat+','+lng], "at", [ctx.color.SBJ, alt + " meters"]]);
+                                }
+                            }
+                        });
                         return;
                     }
                 }

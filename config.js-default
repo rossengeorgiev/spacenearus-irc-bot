@@ -19,7 +19,8 @@ var config =
     stripColors: false,
     channelPrefixes: "&#",
     messageSplit: 512,
-    google_api_key: ""
+    google_api_key: "",
+    geonames_api_user: ""
 }
 
 module.exports = config;
