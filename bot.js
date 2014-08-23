@@ -271,8 +271,9 @@ var bot = {
     handle_ping: function(opts) {
         if(this.storage.tracker.data && opts.args.toLowerCase() in this.storage.tracker.data) {
             var timestamp = this.storage.tracker.data[opts.args.toLowerCase()].gps_time;
+            var name = this.storage.tracker.data[opts.args.toLowerCase()].vehicle;
 
-            this.respond(opts.channel, opts.from, ["Last contact was", [this.color.SBJ, moment(timestamp).fromNow()]]);
+            this.respond(opts.channel, opts.from, ["Last contact with", [this.color.SBJ, name], "was", [this.color.SBJ, moment(timestamp).fromNow()]]);
         }
         else {
             this.respond(opts.channel, opts.from, ["No contact from", [this.color.SBJ, opts.args]]);
@@ -281,14 +282,16 @@ var bot = {
 
     handle_whereis: function(opts) {
         if(this.storage.tracker.data && opts.args.toLowerCase() in this.storage.tracker.data) {
-            var name = opts.args.toLowerCase();
-            var lat = this.storage.tracker.data[name].gps_lat;
-            var lng = this.storage.tracker.data[name].gps_lon;
-            var alt = this.storage.tracker.data[name].gps_alt;
+            var callsignl = opts.args.toLowerCase();
+            var callsign = this.storage.tracker.data[callsignl].vehicle;
+            var lat = this.storage.tracker.data[callsignl].gps_lat;
+            var lng = this.storage.tracker.data[callsignl].gps_lon;
+            var alt = this.storage.tracker.data[callsignl].gps_alt;
+            var dt_minutes = moment().diff(moment(this.storage.tracker.data[callsignl].gps_time), 'minutes');
             var ctx = this;
 
             this.resolve_location(lat,lng, function(name) {
-                var msg = [ (alt>1000)?"Over":"Near" ];
+                var msg = [[ctx.color.SBJ, callsign], (dt_minutes<=3)?"is":"was", (alt>1000)?"over":"near" ];
 
                 if(name) {
                     msg.push([ctx.color.SBJ, name], [ctx.color.EXT, '('+lat+','+lng+')']);
