@@ -20,13 +20,8 @@ var bot = {
         }
     },
     color: {
-        /*
-        SBJ:'magenta',
-        EXT:'light_blue',
-        URL:'dark_blue'
-        */
         SBJ:'dark_green',
-        EXT:'light_cyan',
+        EXT:'cyan',
         URL:'light_blue'
     },
 
@@ -415,7 +410,7 @@ var bot = {
                             msg.push([ctx.color.EXT, "("+doc.payloads.length+" payload"+(doc.payloads.length > 1 ? 's':'')+")"], "-");
 
                             // time
-                            msg.push("Launch time", [ctx.color.SBJ, moment(new Date(doc.launch.time)).calendar()]),
+                            msg.push("Launch date", [ctx.color.SBJ, moment(new Date(doc.launch.time)).calendar()]),
 
                             // place
                             msg.push("from");
