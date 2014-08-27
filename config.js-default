@@ -10,6 +10,7 @@ var config =
     autoRejoin: true,
     autoConnect: true,
     channels: ["#channel"],
+    channels_notify: ["#channel"],
     secure: true,
     selfSigned: false,
     certExpired: false,
