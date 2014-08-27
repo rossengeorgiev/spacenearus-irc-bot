@@ -38,7 +38,7 @@ var bot = {
 
         // init client
         this.client = new irc.Client(config.server, config.nick, config);
-        var command_regex = /^\!([a-z]+) ?(.*)?$/;
+        var command_regex = /^\!([a-zA-Z]+) ?(.*)?$/;
 
         // handle commands
         var ctx = this;
@@ -70,7 +70,10 @@ var bot = {
 
                     case "wiki": ctx.handle_wiki(opts); break;
                     case "ping": ctx.handle_ping(opts); break;
-                    case "whereis": ctx.handle_whereis(opts); break;
+
+                    case "status":
+                    case "whereis":
+                                 ctx.handle_whereis(opts); break;
 
                     case "flights": ctx.handle_flights(opts); break;
                     case "flight": ctx.handle_flight(opts); break;
@@ -282,11 +285,12 @@ var bot = {
             var lat = this.storage.tracker.data[callsignl].gps_lat;
             var lng = this.storage.tracker.data[callsignl].gps_lon;
             var alt = this.storage.tracker.data[callsignl].gps_alt;
-            var dt_minutes = moment().diff(moment(this.storage.tracker.data[callsignl].gps_time), 'minutes');
+            var timestamp = this.storage.tracker.data[callsignl].gps_time;
+            var dt_minutes = moment().diff(moment(timestamp), 'minutes');
             var ctx = this;
 
             this.resolve_location(lat,lng, function(name) {
-                var msg = [[ctx.color.SBJ, callsign], (dt_minutes<=3)?"is":"was", (alt>1000)?"over":"near" ];
+                var msg = [[ctx.color.SBJ, callsign], (dt_minutes<5)?"is":"was", (alt>1000)?"over":"near" ];
 
                 if(name) {
                     msg.push([ctx.color.SBJ, name], [ctx.color.EXT, '('+lat+','+lng+')']);
@@ -296,6 +300,9 @@ var bot = {
                 }
 
                 msg.push("at", [ctx.color.SBJ, ctx.format_number(alt,0) + " meters"]);
+
+                if(dt_minutes >= 5) msg.push("about", [ctx.color.SBJ, moment(timestamp).fromNow()]);
+
                 ctx.respond(opts.channel, opts.from, msg);
             });
 
