@@ -465,10 +465,10 @@ var bot = {
                 var msg = [[ctx.color.SBJ, callsign], (dt_minutes<5)?"is":"was", (alt>1000)?"over":"near" ];
 
                 if(name) {
-                    msg.push([ctx.color.SBJ, name], [ctx.color.EXT, '('+lat+','+lng+')']);
+                    msg.push([ctx.color.SBJ, name], [ctx.color.EXT, '('+ctx.format_number(lat,5)+','+ctx.format_number(lng,5)+')']);
                 }
                 else {
-                    msg.push([ctx.color.SBJ, lat+','+lng]);
+                    msg.push([ctx.color.SBJ, ctx.format_number(lat,5)+','+ctx.format_number(lng,5)]);
                 }
 
                 msg.push("at", [ctx.color.SBJ, ctx.format_number(alt,0) + " meters"]);
