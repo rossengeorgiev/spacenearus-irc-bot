@@ -277,25 +277,53 @@ var bot = {
     },
 
     handle_approve: function(opts) {
-        if(!this.storage.doclookup.doc) {
+        var ctx = this;
+        var xref = this.storage.doclookup;
+
+        if(!xref.doc) {
             this.respond(opts.channel, opts.from, "I haven't seen a flight doc id");
             return;
-        } else if(this.storage.doclookup.doc.type == undefined || this.storage.doclookup.doc.type != "flight") {
-            this.respond(opts.channel, opts.from, ["I can't aprove a doc of type", [this.color.SBJ, this.storage.doclookup.doc.type]]);
+        } else if(xref.doc.type == undefined || xref.doc.type != "flight") {
+            this.respond(opts.channel, opts.from, ["I can't aprove a doc of type", [this.color.SBJ, xref.doc.type]]);
             return;
-        } else if(this.storage.doclookup.doc.type == "flight" && this.storage.doclookup.doc.approved) {
+        } else if(xref.doc.type == "flight" && xref.doc.approved) {
             this.respond(opts.channel, opts.from, "That flight doc has already been approved.");
             return;
-        } else if(this.storage.doclookup.timestamp + 900000 < (new Date()).getTime()) { // 15min
-            this.storage.doclookup.timestamp = (new Date()).getTime();
+        } else if(xref.timestamp + 900000 < (new Date()).getTime()) { // 15min
+            xref.timestamp = (new Date()).getTime();
             this.respond(opts.channel, opts.from, ["Do you mean to approve the following doc? (if 'yes' type", [this.color.SBJ, "!approve"], "again)"]);
-            this.handle_docid_response(opts.channel, this.storage.doclookup.doc);
+            this.handle_docid_response(opts.channel, xref.doc);
             return;
         }
 
         // actually approve the doc
-        this.respond(opts.channel, opts.from, "I'd approve that flight, but I can't yet :(");
+        xref.doc.approved = true;
 
+        var reqOpts = {
+            url: "http://"+this.config.habitat_creds+"@habitat.habhub.org/habitat/" + xref.doc._id,
+            method: "PUT",
+            headers: {
+                'Content-Type':'application/json; charset=UTF-8',
+            },
+            body: JSON.stringify(xref.doc)
+        };
+
+        req(reqOpts, function(error, response, body) {
+            if (!error && response.statusCode == 201) {
+                ctx.respond(opts.channel, opts.from, ["Flight", [ctx.color.SBJ, xref.doc.name], [ctx.color.EXT, "("+xref.doc._id+")"], "has been approved! Good luck"]);
+            } else {
+                var msg = ["Got HTTP", [ctx.color.SBJ, response.statusCode]];
+
+                try {
+                    var json = JSON.parse(body);
+
+                    if(json.error) msg.push([ctx.color.EXT, "("+json.error+")"]);
+                    if(json.reason) msg.push("-", [ctx.color.SBJ, json.reason]);
+                } catch(e) {}
+
+                ctx.respond(opts.channel, opts.from, msg);
+            }
+        });
     },
 
     handle_docid_response: function(channel, doc) {

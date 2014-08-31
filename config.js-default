@@ -23,7 +23,8 @@ var config =
     channelPrefixes: "&#",
     messageSplit: 512,
     google_api_key: "",
-    geonames_api_user: ""
+    geonames_api_user: "",
+    habitat_creds: "" // format: "user:pass"
 }
 
 module.exports = config;
