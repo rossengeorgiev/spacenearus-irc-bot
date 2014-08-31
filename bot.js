@@ -17,6 +17,10 @@ var bot = {
         tracker: {
             timestamp: 0,
             data: null
+        },
+        doclookup: {
+            timestamp: 0,
+            doc: null
         }
     },
     color: {
@@ -60,6 +64,7 @@ var bot = {
                 };
 
                 switch(cmd) {
+                    // regular commands
                     case "hysplit": ctx.handle_hysplit(opts); break;
                     case "track": ctx.handle_track(opts); break;
 
@@ -86,6 +91,17 @@ var bot = {
 
                     case "window": ctx.handle_window(opts); break;
 
+                    // admin commands
+                    case "approve":
+                        if(ctx.config.channel_admins && opts.channel == ctx.config.channel_admins) {
+                            ctx._exec_admin_command(from, function() {
+                                   ctx.handle_approve(opts);
+                            },
+                            function() {
+                                ctx.respond(opts.channel, opts.from, "Calm down! You need to be an admin to do that.");
+                            });
+                        }
+                        break
                     default: break;
                 }
 
@@ -96,10 +112,8 @@ var bot = {
                 match = message.match(regex_docid);
 
                 // get rid of duplicates
-                if(match && match.length > 1) match = ctx.util_uniq_array(match);
-
-                for(var k in match) {
-                    req("http://habitat.habhub.org/habitat/" + match[k], function(error, response, body) {
+                if(match) {
+                    req("http://habitat.habhub.org/habitat/" + match[0], function(error, response, body) {
                         if (!error && response.statusCode == 200) {
                             var data = JSON.parse(body);
                             ctx.handle_docid_response(to, data);
@@ -127,6 +141,18 @@ var bot = {
 
         // fetch latest positions from the tracker
         this.fetch_latest_positions();
+    },
+
+    _exec_admin_command: function(name, success_callback, fail_callback) {
+        var ctx = this;
+
+        this.client.whois(name, function(info) {
+            if(ctx.config.bot_admins.indexOf(info.account) > -1) {
+                if(success_callback) success_callback();
+            } else {
+                if(fail_callback) fail_callback();
+            }
+        });
     },
 
     fetch_latest_positions: function() {
@@ -250,7 +276,33 @@ var bot = {
         return anArray.reduce(function(a,b) { if(a.indexOf(b) == -1) a.push(b); return a; }, []);
     },
 
+    handle_approve: function(opts) {
+        if(!this.storage.doclookup.doc) {
+            this.respond(opts.channel, opts.from, "I haven't seen a flight doc id");
+            return;
+        } else if(this.storage.doclookup.doc.type == undefined || this.storage.doclookup.doc.type != "flight") {
+            this.respond(opts.channel, opts.from, ["I can't aprove a doc of type", [this.color.SBJ, this.storage.doclookup.doc.type]]);
+            return;
+        } else if(this.storage.doclookup.doc.type == "flight" && this.storage.doclookup.doc.approved) {
+            this.respond(opts.channel, opts.from, "That flight doc has already been approved.");
+            return;
+        } else if(this.storage.doclookup.timestamp + 900000 < (new Date()).getTime()) { // 15min
+            this.storage.doclookup.timestamp = (new Date()).getTime();
+            this.respond(opts.channel, opts.from, ["Do you mean to approve the following doc? (if 'yes' type", [this.color.SBJ, "!approve"], "again)"]);
+            this.handle_docid_response(opts.channel, this.storage.doclookup.doc);
+            return;
+        }
+
+        // actually approve the doc
+        this.respond(opts.channel, opts.from, "I'd approve that flight, but I can't yet :(");
+
+    },
+
     handle_docid_response: function(channel, doc) {
+        // remember the doc
+        this.storage.doclookup.doc = doc;
+        this.storage.doclookup.timestamp = (new Date()).getTime();
+
         var short_id = doc._id.substr(-4);
 
         switch(doc.type) {

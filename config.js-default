@@ -12,6 +12,7 @@ var config =
     channels: ["#channel"],
     channels_notify: ["#channel"],
     channel_admins: "#channel",
+    bot_admins: [],
     secure: true,
     selfSigned: false,
     certExpired: false,
