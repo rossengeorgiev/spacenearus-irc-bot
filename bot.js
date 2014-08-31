@@ -327,7 +327,7 @@ var bot = {
                             ctx.respond(opts.channel, opts.from, ["Wiki page", [ctx.color.SBJ, submatch[2]], "-", [ctx.color.URL, "http://ukhas.org.uk" + submatch[1]]]);
                         }
                     } else {
-                        ctx.respond(opts.channel, opts.from, ["Found", [ctx.color.SBJ, match.length], "results for you query"]);
+                        ctx.respond(opts.channel, opts.from, ["Found", [ctx.color.SBJ, match.length], "results for you query -", [ctx.color.URL, "http://ukhas.org.uk/start?do=search&id="+opts.args]]);
                     }
                 } else {
                     ctx.respond(opts.channel, opts.from, "No results for your query");
