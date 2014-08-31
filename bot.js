@@ -312,7 +312,11 @@ var bot = {
 
                 break;
             default:
-                this.respond(channel,"", [[this.color.SBJ,doc._id],"is of type",[this.color.SBJ, doc.type],"-",[this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]]);
+                if('type' in doc) {
+                    this.respond(channel,"", ["Doc", [this.color.SBJ,doc._id], "is of type", [this.color.SBJ, doc.type], "-", [this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]]);
+                } else {
+                    this.respond(channel,"", ["Doc", [this.color.SBJ,doc._id], "is of unknown type -", [this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]]);
+                }
         }
     },
 
