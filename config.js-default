@@ -11,6 +11,7 @@ var config =
     autoConnect: true,
     channels: ["#channel"],
     channels_notify: ["#channel"],
+    channel_admins: "#channel",
     secure: true,
     selfSigned: false,
     certExpired: false,

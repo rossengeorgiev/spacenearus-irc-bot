@@ -38,7 +38,8 @@ var bot = {
 
         // init client
         this.client = new irc.Client(config.server, config.nick, config);
-        var command_regex = /^\!([a-zA-Z]+) ?(.*)?$/;
+        var regex_cmd = /^\!([a-zA-Z]+) ?(.*)?$/;
+        var regex_docid = /([a-f0-9]{64}|[a-f0-9]{32})/gi;
 
         // handle commands
         var ctx = this;
@@ -46,7 +47,7 @@ var bot = {
         this.client.addListener('message', function (from, to, message) {
             if(to[0] != "#") return;
 
-            var match = message.match(command_regex);
+            var match = message.match(regex_cmd);
 
             if(match && match.length) {
                 var cmd = match[1];
@@ -88,6 +89,23 @@ var bot = {
                     default: break;
                 }
 
+                return;
+            }
+
+            if(ctx.config.channel_admins && to == ctx.config.channel_admins) {
+                match = message.match(regex_docid);
+
+                // get rid of duplicates
+                if(match && match.length > 1) match = ctx.util_uniq_array(match);
+
+                for(var k in match) {
+                    req("http://habitat.habhub.org/habitat/" + match[k], function(error, response, body) {
+                        if (!error && response.statusCode == 200) {
+                            var data = JSON.parse(body);
+                            ctx.handle_docid_response(to, data);
+                        }
+                    });
+                }
             }
         });
 
@@ -226,6 +244,76 @@ var bot = {
 
             callback(null);
         });
+    },
+
+    util_uniq_array: function(anArray) {
+        return anArray.reduce(function(a,b) { if(a.indexOf(b) == -1) a.push(b); return a; }, []);
+    },
+
+    handle_docid_response: function(channel, doc) {
+        var short_id = doc._id.substr(-4);
+
+        switch(doc.type) {
+            case "payload_telemetry":
+                var raw = new Buffer(doc.data._raw, 'base64').toString("ascii").trim();
+                this.respond(channel,"", ["Payload telemetry", [this.color.SBJ, doc._id],[this.color.EXT,(doc.data._parsed)?"(parsed)":"(not prased)"],"raw:", [this.color.SBJ, raw]]);
+                break;
+            case "flight":
+                var msg = ["Flight", [this.color.SBJ, doc.name]];
+                var lat = this.format_number(doc.launch.location.latitude, 5);
+                var lng = this.format_number(doc.launch.location.longitude, 5);
+
+                // main info
+                msg.push([this.color.EXT, "("+short_id+", "+(doc.approved?"approved":"not approved")+", "+doc.payloads.length+" payload"+(doc.payloads.length > 1 ? 's':'')+")"]);
+
+                // metadata
+                msg.push("Project", [this.color.SBJ, doc.metadata.project],"by",[this.color.SBJ, doc.metadata.group]);
+
+                // window
+                msg.push("Window:", [this.color.SBJ, moment(new Date(doc.start)).calendar()],"to",[this.color.SBJ, moment(new Date(doc.end)).calendar()]);
+
+                // launch time
+                msg.push("Launch:", [this.color.SBJ, moment(new Date(doc.launch.time)).calendar()]);
+
+                // place
+                msg.push("from", [this.color.SBJ, doc.metadata.location]);
+                msg.push([this.color.EXT, "("+lat+","+lng+")"]);
+
+
+                this.respond(channel,"", msg);
+                break;
+            case "payload_configuration":
+                var msg = ["Payload configuration for",[this.color.SBJ, doc.name], [this.color.EXT, "("+short_id+")"],"-"];
+
+                if(doc.transmissions.length == 0) {
+                    msg.push("no transmissions");
+                }
+                else {
+                    xref = doc.transmissions[0];
+
+                    msg.push([this.color.SBJ, (xref.frequency / 1000000) + " MHz " + xref.mode]);
+
+                    switch(xref.modulation) {
+                        case "DominoEX":
+                            msg.push([this.color.SBJ, xref.modulation], "with speed", [this.color.SBJ, xref.speed]);
+                            break;
+                        case "Hellschreiber":
+                            msg.push([this.color.SBJ, xref.modulation + " " + xref.variant]);
+                            break;
+                        case "RTTY":
+                            msg.push([this.color.SBJ, xref.modulation + " " + xref.baud + "/" + xref.shift + "Hz " + xref.encoding + " " + xref.parity + " " + xref.stop]);
+                            break;
+                        default: break;
+
+                    }
+                }
+
+                this.respond(channel,"", msg);
+
+                break;
+            default:
+                this.respond(channel,"", [[this.color.SBJ,doc._id],"is of type",[this.color.SBJ, doc.type],"-",[this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]]);
+        }
     },
 
     // handle hysplit
