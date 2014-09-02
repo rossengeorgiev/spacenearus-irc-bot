@@ -29,6 +29,9 @@ var bot = {
         URL:'light_blue'
     },
 
+    regex_cmd: /^\!([a-zA-Z]+) ?(.*)?$/,
+    regex_docid: /([a-f0-9]{64}|[a-f0-9]{32})/gi,
+
     client: null,
 
     init: function(config) {
@@ -42,8 +45,8 @@ var bot = {
 
         // init client
         this.client = new irc.Client(config.server, config.nick, config);
-        var regex_cmd = /^\!([a-zA-Z]+) ?(.*)?$/;
-        var regex_docid = /([a-f0-9]{64}|[a-f0-9]{32})/gi;
+        var regex_cmd = this.regex_cmd;
+        var regex_docid = this.regex_docid;
 
         // handle commands
         var ctx = this;
@@ -116,7 +119,7 @@ var bot = {
                     req("http://habitat.habhub.org/habitat/" + match[0], function(error, response, body) {
                         if (!error && response.statusCode == 200) {
                             var data = JSON.parse(body);
-                            ctx.handle_docid_response(to, data);
+                            ctx.handle_docid_response(to, data, true);
                         }
                     });
                 }
@@ -292,7 +295,7 @@ var bot = {
         } else if(xref.timestamp + 900000 < (new Date()).getTime()) { // 15min
             xref.timestamp = (new Date()).getTime();
             this.respond(opts.channel, opts.from, ["Do you mean to approve the following doc? (if 'yes' type", [this.color.SBJ, "!approve"], "again)"]);
-            this.handle_docid_response(opts.channel, xref.doc);
+            this.handle_docid_response(opts.channel, xref.doc, true);
             return;
         }
 
@@ -326,12 +329,14 @@ var bot = {
         });
     },
 
-    handle_docid_response: function(channel, doc) {
+    handle_docid_response: function(channel, doc, context) {
         var ctx = this;
 
         // remember the doc
-        this.storage.doclookup.doc = doc;
-        this.storage.doclookup.timestamp = (new Date()).getTime();
+        if(context != undefined && context == true) {
+            this.storage.doclookup.doc = doc;
+            this.storage.doclookup.timestamp = (new Date()).getTime();
+        }
 
         var short_id = doc._id.substr(-4);
 
@@ -370,7 +375,7 @@ var bot = {
 
                             if(!json.rows || json.rows.length == 0) return;
 
-                            var msg = ["Payloads status:"];
+                            var msg = ["Payload status:"];
                             var xref = ctx.storage.tracker.data;
 
                             for(var k in json.rows) {
@@ -380,11 +385,11 @@ var bot = {
                                     msg.push([ctx.color.SBJ, payload.doc.name]);
 
                                     if(!xref.hasOwnProperty(payload.doc.name.toLowerCase())) {
-                                        msg.push([ctx.color.EXT, "(never)"]);
+                                        msg.push([ctx.color.EXT, "("+ payload.doc._id.substr(-4) + ", never)"]);
                                     }
                                     else {
                                         var timestamp = xref[payload.doc.name.toLowerCase()].gps_time;
-                                        msg.push([ctx.color.EXT, "("+moment(timestamp).fromNow()+")"]);
+                                        msg.push([ctx.color.EXT, "("+ payload.doc._id.substr(-4) + ", "+moment(timestamp).fromNow()+")"]);
                                     }
 
                                 }
@@ -554,14 +559,14 @@ var bot = {
     // habitat stuff
     handle_id: function(opts) {
         var ctx = this;
-        var match = opts.args.match(regex_docid);
+        var match = opts.args.match(this.regex_docid);
 
         // try and match 32 or 64 long doc id hash
         if(match) {
             req("http://habitat.habhub.org/habitat/" + match[0], function(error, response, body) {
                 if (!error && response.statusCode == 200) {
                     var data = JSON.parse(body);
-                    ctx.handle_docid_response(to, data);
+                    ctx.handle_docid_response(opts.channel, data);
                 }
             });
 
