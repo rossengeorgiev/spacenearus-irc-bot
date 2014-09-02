@@ -96,18 +96,29 @@ var bot = {
 
                     case "window": ctx.handle_window(opts); break;
 
-                    // admin commands
-                    case "approve":
+                    default:
+                        // admin commands
                         if(ctx.config.channel_admins && opts.channel == ctx.config.channel_admins) {
-                            ctx._exec_admin_command(from, function() {
-                                   ctx.handle_approve(opts);
-                            },
-                            function() {
-                                ctx.respond(opts.channel, opts.from, "Calm down! You need to be an admin to do that.");
-                            });
+                            switch(cmd) {
+                                case "amiadmin":
+                                    ctx._exec_admin_command(from, function() {
+                                        ctx.respond(opts.channel, opts.from, "Of course you are, dear");
+                                    }, function() {
+                                        ctx.respond(opts.channel, opts.from, "Nope");
+                                    });
+                                    break;
+                                case "approve":
+                                    ctx._exec_admin_command(from, function() {
+                                           ctx.handle_approve(opts);
+                                    },
+                                    function() {
+                                        ctx.respond(opts.channel, opts.from, "Calm down! You need to be an admin to do that.");
+                                    });
+                                    break
+
+                                defeault: break;
+                            }
                         }
-                        break
-                    default: break;
                 }
 
                 return;
