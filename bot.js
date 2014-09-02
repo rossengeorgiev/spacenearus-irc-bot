@@ -353,11 +353,16 @@ var bot = {
                 // main info
                 msg.push([this.color.EXT, "("+short_id+", "+(doc.approved?"approved":"not approved")+", "+doc.payloads.length+" payload"+(doc.payloads.length > 1 ? 's':'')+")"]);
 
+                this.respond(channel,"", msg); msg = [];
+
                 // metadata
                 msg.push("Project", [this.color.SBJ, doc.metadata.project],"by",[this.color.SBJ, doc.metadata.group]);
+                this.respond(channel,"", msg); msg = [];
 
                 // window
                 msg.push("Window:", [this.color.SBJ, moment(new Date(doc.start)).calendar()],"to",[this.color.SBJ, moment(new Date(doc.end)).calendar()]);
+
+                this.respond(channel,"", msg); msg = [];
 
                 // launch time
                 msg.push("Launch:", [this.color.SBJ, moment(new Date(doc.launch.time)).calendar()]);
