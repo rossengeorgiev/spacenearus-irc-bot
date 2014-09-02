@@ -33,6 +33,7 @@ var bot = {
     regex_docid: /([a-f0-9]{64}|[a-f0-9]{32})/gi,
 
     client: null,
+    crashed: false,
 
     init: function(config) {
         if(!config) return;
@@ -134,6 +135,22 @@ var bot = {
         this.client.addListener('error', function(message) {
                 console.log('error: ', message);
         });
+
+        // handle all exceptions
+        process.on('uncaughtException', function(error) {
+            // here we crash for real
+            if(ctx.crashed) {
+                throw error;
+            }
+
+            ctx.notify("exiting.. help", true, true);
+            ctx.crashed = true;
+
+            setTimeout(function() {
+                throw error;
+            },1000);
+        });
+
     },
 
     init_fetch_complete: false,
@@ -144,6 +161,8 @@ var bot = {
 
         // fetch latest positions from the tracker
         this.fetch_latest_positions();
+
+        this.notify("is back!", true, true);
     },
 
     _exec_admin_command: function(name, success_callback, fail_callback) {
@@ -207,7 +226,9 @@ var bot = {
 
     // wrapper function for nice looking reponses
 
-    respond: function(dest, to, msg) {
+    respond: function(dest, to, msg, action) {
+        action = (action == undefined || typeof action != "boolean") ? false : action;
+
         var resp = (to) ? irc.colors.wrap(this.color.SBJ, to) + ": " : "";
 
         if(typeof msg == 'string') {
@@ -221,14 +242,23 @@ var bot = {
                 }
             }
         }
-        this.client.say(dest, resp);
+
+        if(action)
+            this.client.action(dest, resp);
+        else
+            this.client.say(dest, resp);
     },
 
     // notify
 
-    notify: function(msg) {
-        for(var k in config.channels_notify) {
-            this.respond(config.channels_notify[k], null, msg);
+    notify: function(msg, all, action) {
+        action = (action == undefined || typeof action != "boolean") ? false : action;
+        all = (all == undefined || typeof all != "boolean") ? false : all;
+
+        var list = (all) ? this.config.channels : this.config.channels_notify;
+
+        for(var k in list) {
+            this.respond(list[k], null, msg, action);
         }
     },
 
