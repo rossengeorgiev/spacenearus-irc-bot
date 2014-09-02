@@ -639,8 +639,7 @@ var bot = {
 
 
                     for(var k in data.rows) {
-                        var id_len = data.rows[k].id.length;
-                        var id = data.rows[k].id.substr(id_len - 4);
+                        var id = data.rows[k].id.substr(-4);
                         var doc = data.rows[k].doc;
 
                         if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime()) {
@@ -683,14 +682,13 @@ var bot = {
                     }
 
                     for(var k in data.rows) {
-                        var id_len = data.rows[k].id.length;
                         var id = data.rows[k].id;
                         var doc = data.rows[k].doc;
 
-                        var match = (flight_id != null) ? id == flight_id : id.substr(id_len - 4) == opts.args;
+                        var match = (flight_id != null) ? id == flight_id : id.substr(-4) == opts.args;
 
                         if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime() && match) {
-                            var msg = ["Flight", [ctx.color.EXT, "(" + id.substr(id_len - 4) + "):"], [ctx.color.SBJ, doc.name]];
+                            var msg = ["Flight", [ctx.color.EXT, "(" + id.substr(-4) + "):"], [ctx.color.SBJ, doc.name]];
                             var lat = ctx.format_number(doc.launch.location.latitude, 5);
                             var lng = ctx.format_number(doc.launch.location.longitude, 5);
 
@@ -739,8 +737,7 @@ var bot = {
                     var found = false;
 
                     for(var k in data.rows) {
-                        var id_len = data.rows[k].id.length;
-                        var id = data.rows[k].id.substr(id_len - 4);
+                        var id = data.rows[k].id.substr(-4);
                         var doc = data.rows[k].doc;
 
                         if(doc.type == "payload_configuration" && (id == opts.args || doc.name.toLowerCase() == opts.args.toLowerCase())) {
@@ -807,17 +804,16 @@ var bot = {
                     }
 
                     for(var k in data.rows) {
-                        var id_len = data.rows[k].id.length;
                         var id = data.rows[k].id;
                         var doc = data.rows[k].doc;
 
-                        var match = (flight_id != null) ? id == flight_id : id.substr(id_len - 4) == opts.args;
+                        var match = (flight_id != null) ? id == flight_id : id.substr(-4) == opts.args;
 
                         if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime() && match) {
                             ctx.respond(opts.channel, opts.from, [
                                 "Flight window for",
                                 [ctx.color.SBJ, doc.name],
-                                [ctx.color.EXT, "(" + id.substr(id_len - 4) + ")"],
+                                [ctx.color.EXT, "(" + id.substr(-4) + ")"],
                                 "is from",
                                 [ctx.color.SBJ, moment(new Date(doc.start)).calendar()],
                                 "to",
