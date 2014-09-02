@@ -119,7 +119,7 @@ var bot = {
                     req("http://habitat.habhub.org/habitat/" + match[0], function(error, response, body) {
                         if (!error && response.statusCode == 200) {
                             var data = JSON.parse(body);
-                            ctx.handle_docid_response(to, data, true);
+                            ctx.handle_docid_response(to, data, true, true);
                         }
                     });
                 }
@@ -295,7 +295,7 @@ var bot = {
         } else if(xref.timestamp + 900000 < (new Date()).getTime()) { // 15min
             xref.timestamp = (new Date()).getTime();
             this.respond(opts.channel, opts.from, ["Do you mean to approve the following doc? (if 'yes' type", [this.color.SBJ, "!approve"], "again)"]);
-            this.handle_docid_response(opts.channel, xref.doc, true);
+            this.handle_docid_response(opts.channel, xref.doc, true, true);
             return;
         }
 
@@ -329,7 +329,7 @@ var bot = {
         });
     },
 
-    handle_docid_response: function(channel, doc, context) {
+    handle_docid_response: function(channel, doc, shortid, context, addurl) {
         var ctx = this;
 
         // remember the doc
@@ -338,7 +338,7 @@ var bot = {
             this.storage.doclookup.timestamp = (new Date()).getTime();
         }
 
-        var short_id = doc._id.substr(-4);
+        var short_id = (shortid == undefined || shortid == false) ? doc._id : doc._id.substr(-4);
 
         switch(doc.type) {
             case "payload_telemetry":
@@ -403,7 +403,7 @@ var bot = {
                 }
                 break;
             case "payload_configuration":
-                var msg = ["Payload configuration for",[this.color.SBJ, doc.name], [this.color.EXT, "("+short_id+")"],"-"];
+                var msg = ["Payload config for",[this.color.SBJ, doc.name], [this.color.EXT, "("+short_id+")"],"-"];
 
                 if(doc.transmissions.length == 0) {
                     msg.push("no transmissions");
@@ -427,6 +427,8 @@ var bot = {
 
                     }
                 }
+
+                if(addurl != undefined && addurl == true) msg.push("-", [this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]);
 
                 this.respond(channel,"", msg);
 
@@ -566,7 +568,7 @@ var bot = {
             req("http://habitat.habhub.org/habitat/" + match[0], function(error, response, body) {
                 if (!error && response.statusCode == 200) {
                     var data = JSON.parse(body);
-                    ctx.handle_docid_response(opts.channel, data);
+                    ctx.handle_docid_response(opts.channel, data, false, false, true);
                 }
             });
 
@@ -574,32 +576,50 @@ var bot = {
         }
 
         // fallback and try to resolve 4 char short doc id or payload callsign, returns the flight doc
+        var lookup = {};
+
+        // not approved flights
+        req("http://habitat.habhub.org/habitat/_design/flight/_view/unapproved_name_including_payloads?include_docs=true", function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                var data = JSON.parse(body);
+
+                if(data.rows.length) {
+                    // if the argument is a callsign, try to find the payload_configuration for flight_id
+                    for(var k in data.rows) {
+                        var xref = data.rows[k];
+                        var argLower = opts.args.toLowerCase();
+
+                        if((xref.doc.type == "payload_configuration" && argLower == xref.doc.name.toLowerCase())
+                           || xref.doc._id.substr(-4) == argLower) {
+
+                            if(lookup.hasOwnProperty(xref.doc._id)) continue;
+                            else lookup[xref.doc._id] = true;
+
+                            ctx.handle_docid_response(opts.channel, xref.doc, false, false, true);
+                        }
+                    }
+                }
+            }
+        });
+
+        // approved flights
         req("http://habitat.habhub.org/habitat/_design/flight/_view/end_start_including_payloads?include_docs=true&startkey=["+((new Date()).getTime()/1000)+"]", function(error, response, body) {
             if (!error && response.statusCode == 200) {
                 var data = JSON.parse(body);
 
                 if(data.rows.length) {
-                    var flight_id = null;
-
                     // if the argument is a callsign, try to find the payload_configuration for flight_id
                     for(var k in data.rows) {
                         var xref = data.rows[k];
+                        var argLower = opts.args.toLowerCase();
 
-                        if(xref.doc.type == "payload_configuration" && opts.args.toLowerCase() == xref.doc.name.toLowerCase()) {
-                            flight_id = xref.id;
-                            break;
-                        }
-                    }
+                        if((xref.doc.type == "payload_configuration" && argLower == xref.doc.name.toLowerCase())
+                           || xref.doc._id.substr(-4) == argLower) {
 
-                    for(var k in data.rows) {
-                        var id_len = data.rows[k].id.length;
-                        var id = data.rows[k].id;
-                        var doc = data.rows[k].doc;
+                            if(lookup.hasOwnProperty(xref.doc._id)) continue;
+                            else lookup[xref.doc._id] = true;
 
-                        var match = (flight_id != null) ? id == flight_id : id.substr(id_len - 4) == opts.args;
-
-                        if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime() && match) {
-                            ctx.respond(opts.channel, opts.from, ["Flight doc:", [ctx.color.SBJ, doc.name], [ctx.color.EXT, "(" + id + "):"]]);
+                            ctx.handle_docid_response(opts.channel, xref.doc, false, false, true);
                         }
                     }
                 }
