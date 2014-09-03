@@ -447,12 +447,11 @@ var bot = {
                     var count = 0;
                     var statuses = [];
 
-                    for(var j in doc.payloads) {
-                        var id = doc.payloads[j];
+                    // nessesary to run queries in order and to avoid race condition
+                    var next_query = function() {
+                        var id = doc.payloads[count++];
 
                         req("http://habitat.habhub.org/habitat/_design/payload_telemetry/_view/payload_time?limit=1&startkey=[%22"+id+"%22,{}]&descending=true&include_docs=true", function(error, response, body) {
-                            count++;
-
                             if(!error && response.statusCode == 200) {
                                 var json = JSON.parse(body);
 
@@ -467,8 +466,11 @@ var bot = {
                                 statuses.push([ctx.color.SBJ, json.doc.data.payload], [ctx.color.EXT, "("+moment(json.key[1]*1000).fromNow()+")"]);
                             }
 
-                            // if we resolved all payloads
-                            if(count == nPayloads) {
+                            // run next query, until we've resolved all payloads
+                            if(count != nPayloads) {
+                                next_query();
+                            }
+                            else{
                                 var msg = ["Payload parse status:"];
 
                                 if(statuses.length) {
@@ -484,7 +486,10 @@ var bot = {
                                 ctx.respond(channel,"", msg);
                             }
                         });
-                    }
+                    };
+
+                    next_query();
+
                 }
                 break;
             case "payload_configuration":
