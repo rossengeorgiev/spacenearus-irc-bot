@@ -373,13 +373,18 @@ var bot = {
     handle_docid_response: function(channel, doc, shortid, context, addurl) {
         var ctx = this;
 
+        // handle variables
+        shortid = (shortid == undefined || typeof shortid != "boolean") ? false : shortid;
+        context = (context == undefined || typeof context != "boolean") ? false : context;
+        addurl = (addurl == undefined || typeof addurl != "boolean") ? false : addurl;
+
         // remember the doc
-        if(context != undefined && context == true) {
+        if(context) {
             this.storage.doclookup.doc = doc;
             this.storage.doclookup.timestamp = (new Date()).getTime();
         }
 
-        var short_id = (shortid == undefined || shortid == false) ? doc._id : doc._id.substr(-4);
+        var short_id = (shortid) ? doc._id.substr(-4) : doc._id;
 
         switch(doc.type) {
             case "payload_telemetry":
@@ -413,6 +418,8 @@ var bot = {
                 msg.push([this.color.EXT, "("+lat+","+lng+")"]);
 
                 this.respond(channel,"", msg);
+
+                if(addurl) this.respond(channel, "", ["Raw:", [this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]]);
 
                 if(!doc.approved && doc.payloads.length) {
                     req("http://habitat.habhub.org/habitat/_design/flight/_view/unapproved_name_including_payloads?include_docs=true", function(error, response, body) {
@@ -449,34 +456,51 @@ var bot = {
                 }
                 break;
             case "payload_configuration":
-                var msg = ["Payload config for",[this.color.SBJ, doc.name], [this.color.EXT, "("+short_id+")"],"-"];
+                var msg = ["Payload config",[this.color.SBJ, doc.name], [this.color.EXT, "("+short_id+")"]];
 
-                if(doc.transmissions.length == 0) {
-                    msg.push("no transmissions");
+                if(addurl) msg.push("-", [this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]);
+
+                this.respond(channel,"", msg);
+
+                // display callsigns
+                msg = ["Callsigns:"];
+                if(doc.sentences.length == 0) {
+                    msg.push("none");
+                    this.respond(channel, "", msg);
                 }
                 else {
-                    xref = doc.transmissions[0];
+                    var last = doc.sentences.length - 1;
+                    for(var k in doc.sentences) msg.push([this.color.SBJ, doc.sentences[k].callsign + ((last != k)?',':'')]);
 
-                    msg.push([this.color.SBJ, (xref.frequency / 1000000) + " MHz " + xref.mode]);
+                    this.respond(channel, "", msg);
+                }
 
-                    switch(xref.modulation) {
-                        case "DominoEX":
-                            msg.push([this.color.SBJ, xref.modulation], "with speed", [this.color.SBJ, xref.speed]);
-                            break;
-                        case "Hellschreiber":
-                            msg.push([this.color.SBJ, xref.modulation + " " + xref.variant]);
-                            break;
-                        case "RTTY":
-                            msg.push([this.color.SBJ, xref.modulation + " " + xref.baud + "/" + xref.shift + "Hz " + xref.encoding + " " + xref.parity + " " + xref.stop]);
-                            break;
-                        default: break;
 
+                // display transmissions
+                if(doc.transmissions.length > 0) {
+                    for(var k in doc.transmissions) {
+                        var xref = doc.transmissions[k];
+                        msg = ["Transmission #"+k+":", [this.color.SBJ, xref.description], "-"];
+
+                        msg.push([this.color.SBJ, (xref.frequency / 1000000) + " MHz " + xref.mode]);
+
+                        switch(xref.modulation) {
+                            case "DominoEX":
+                                msg.push([this.color.SBJ, xref.modulation], "with speed", [this.color.SBJ, xref.speed]);
+                                break;
+                            case "Hellschreiber":
+                                msg.push([this.color.SBJ, xref.modulation + " " + xref.variant]);
+                                break;
+                            case "RTTY":
+                                msg.push([this.color.SBJ, xref.modulation + " " + xref.baud + "/" + xref.shift + "Hz " + xref.encoding + " " + xref.parity + " " + xref.stop]);
+                                break;
+                            default: break;
+
+                        }
+                        this.respond(channel,"", msg);
                     }
                 }
 
-                if(addurl != undefined && addurl == true) msg.push("-", [this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]);
-
-                this.respond(channel,"", msg);
 
                 break;
             default:
