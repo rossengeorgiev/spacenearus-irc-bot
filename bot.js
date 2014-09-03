@@ -442,37 +442,49 @@ var bot = {
                 if(addurl) this.respond(channel, "", ["Raw:", [this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]]);
 
                 if(!doc.approved && doc.payloads.length) {
-                    req("http://habitat.habhub.org/habitat/_design/flight/_view/unapproved_name_including_payloads?include_docs=true", function(error, response, body) {
-                        if(!error && response.statusCode == 200) {
-                            var json = JSON.parse(body);
+                    var nPayloads = doc.payloads.length;
+                    var nFound = 0;
+                    var count = 0;
+                    var statuses = [];
 
-                            if(!json.rows || json.rows.length == 0) return;
+                    for(var j in doc.payloads) {
+                        var id = doc.payloads[j];
 
-                            var msg = ["Payload status:"];
-                            var xref = ctx.storage.tracker.data;
+                        req("http://habitat.habhub.org/habitat/_design/payload_telemetry/_view/payload_time?limit=1&startkey=[%22"+id+"%22,{}]&descending=true&include_docs=true", function(error, response, body) {
+                            count++;
 
-                            for(var k in json.rows) {
-                                var payload = json.rows[k];
+                            if(!error && response.statusCode == 200) {
+                                var json = JSON.parse(body);
 
-                                if(payload.id == doc._id && payload.doc.type == "payload_configuration") {
-                                    msg.push([ctx.color.SBJ, payload.doc.name]);
+                                if(json.rows == undefined || json.rows.length == 0) return;
 
-                                    if(!xref.hasOwnProperty(payload.doc.name.toLowerCase())) {
-                                        msg.push([ctx.color.EXT, "("+ payload.doc._id.substr(-4) + ", never)"]);
-                                    }
-                                    else {
-                                        var timestamp = xref[payload.doc.name.toLowerCase()].gps_time;
-                                        msg.push([ctx.color.EXT, "("+ payload.doc._id.substr(-4) + ", "+moment(timestamp).fromNow()+")"]);
-                                    }
+                                json = json.rows[0];
 
-                                }
+                                if(doc.payloads.indexOf(json.key[0]) == -1 || json.doc.data == undefined) return;
+
+                                nFound++;
+
+                                statuses.push([ctx.color.SBJ, json.doc.data.payload], [ctx.color.EXT, "("+moment(json.key[1]*1000).fromNow()+")"]);
                             }
 
-                            ctx.respond(channel,"", msg);
-                        } else {
-                            ctx.respond(channel,"","Error while resolving the payloads. Help!");
-                        }
-                    });
+                            // if we resolved all payloads
+                            if(count == nPayloads) {
+                                var msg = ["Payload parse status:"];
+
+                                if(statuses.length) {
+                                    msg = msg.concat(statuses);
+                                }
+
+                                if(nFound != nPayloads) {
+                                    if(statuses.length) msg.push("and");
+
+                                    msg.push([ctx.color.SBJ, nPayloads - nFound], "untested");
+                                }
+
+                                ctx.respond(channel,"", msg);
+                            }
+                        });
+                    }
                 }
                 break;
             case "payload_configuration":
