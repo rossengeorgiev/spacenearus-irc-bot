@@ -316,8 +316,28 @@ var bot = {
         });
     },
 
-    util_uniq_array: function(anArray) {
-        return anArray.reduce(function(a,b) { if(a.indexOf(b) == -1) a.push(b); return a; }, []);
+    _transmission_make_pretty: function(xref) {
+        var ctx = this, msg = [];
+
+        if(xref.description != undefined) msg.push([ctx.color.SBJ, xref.description], "-");
+
+        msg.push([ctx.color.SBJ, (xref.frequency / 1000000) + " MHz " + xref.mode]);
+
+        switch(xref.modulation) {
+            case "DominoEX":
+                msg.push([ctx.color.SBJ, xref.modulation], "with speed", [ctx.color.SBJ, xref.speed]);
+                break;
+            case "Hellschreiber":
+                msg.push([ctx.color.SBJ, xref.modulation + " " + xref.variant]);
+                break;
+            case "RTTY":
+                msg.push([ctx.color.SBJ, xref.modulation + " " + xref.baud + "/" + xref.shift + "Hz " + xref.encoding + " " + xref.parity + " " + xref.stop]);
+                break;
+            default: break;
+
+        }
+
+        return msg;
     },
 
     handle_approve: function(opts) {
@@ -480,23 +500,10 @@ var bot = {
                 if(doc.transmissions.length > 0) {
                     for(var k in doc.transmissions) {
                         var xref = doc.transmissions[k];
-                        msg = ["Transmission #"+k+":", [this.color.SBJ, xref.description], "-"];
+                        msg = ["Transmission #"+k+":"]
 
-                        msg.push([this.color.SBJ, (xref.frequency / 1000000) + " MHz " + xref.mode]);
+                        msg = msg.concat(this._transmission_make_pretty(xref));
 
-                        switch(xref.modulation) {
-                            case "DominoEX":
-                                msg.push([this.color.SBJ, xref.modulation], "with speed", [this.color.SBJ, xref.speed]);
-                                break;
-                            case "Hellschreiber":
-                                msg.push([this.color.SBJ, xref.modulation + " " + xref.variant]);
-                                break;
-                            case "RTTY":
-                                msg.push([this.color.SBJ, xref.modulation + " " + xref.baud + "/" + xref.shift + "Hz " + xref.encoding + " " + xref.parity + " " + xref.stop]);
-                                break;
-                            default: break;
-
-                        }
                         this.respond(channel,"", msg);
                     }
                 }
@@ -819,33 +826,49 @@ var bot = {
                         if(doc.type == "payload_configuration" && (short_id == opts.args || ctx._payload_match_name(opts.args, doc))) {
                             found = true;
 
-                            var msg = ["Payload",[ctx.color.SBJ, doc.name], [ctx.color.EXT, "("+short_id+")"],"-"];
+                            var msg = ["Payload",[ctx.color.SBJ, doc.name], [ctx.color.EXT, "("+short_id+")"]];
+                            var callsigns = [];
 
-                            if(doc.transmissions.length == 0) {
-                                msg.push("no transmissions");
+                            if(doc.sentences.length == 1) {
+                                msg.push([ctx.color.SBJ, "$$"+doc.sentences[0].callsign]);
                             }
-                            else {
+                            else if(doc.sentences.length > 1) {
+                                var last = doc.sentences.length - 1;
+
+                                for(var j in doc.sentences)
+                                    callsigns.push([ctx.color.SBJ, doc.sentences[j].callsign + ((last != j)?',':'')]);
+                            }
+
+                            // keep it short if we have less than 2 transmissions
+                            if(doc.transmissions.length == 0) {
+                                msg.push("- no transmissions");
+                                ctx.respond(opts.channel, opts.from, msg);
+
+                                if(callsigns.length > 1) ctx.respond(opts.channel, opts.from, ["Callsigns:"].concat(callsigns));
+                            }
+                            else if(doc.transmissions.length == 1) {
                                 xref = doc.transmissions[0];
 
-                                msg.push([ctx.color.SBJ, (xref.frequency / 1000000) + " MHz " + xref.mode]);
+                                msg.push("-");
+                                msg = msg.concat(ctx._transmission_make_pretty(xref));
+                                ctx.respond(opts.channel, opts.from, msg);
 
-                                switch(xref.modulation) {
-                                    case "DominoEX":
-                                        msg.push([ctx.color.SBJ, xref.modulation], "with speed", [ctx.color.SBJ, xref.speed]);
-                                        break;
-                                    case "Hellschreiber":
-                                        msg.push([ctx.color.SBJ, xref.modulation + " " + xref.variant]);
-                                        break;
-                                    case "RTTY":
-                                        msg.push([ctx.color.SBJ, xref.modulation + " " + xref.baud + "/" + xref.shift + "Hz " + xref.encoding + " " + xref.parity + " " + xref.stop]);
-                                        break;
-                                    default: break;
+                                if(callsigns.length > 1) ctx.respond(opts.channel, opts.from, ["Callsigns:"].concat(callsigns));
+                            }
+                            // for more than 1 tranmissions, print them on seperate lines
+                            else {
+                                ctx.respond(opts.channel, opts.from, msg);
+                                if(callsigns.length > 1) ctx.respond(opts.channel, opts.from, ["Callsigns:"].concat(callsigns));
 
+                                for(var j in doc.transmissions) {
+                                    xref = doc.transmissions[j];
+
+                                    msg = ["Tranmission #"+j+":"]
+
+                                    msg = msg.concat(ctx._transmission_make_pretty(xref));
+                                    ctx.respond(opts.channel, opts.from, msg);
                                 }
                             }
-
-
-                            ctx.respond(opts.channel, opts.from, msg);
                         }
                     }
 
