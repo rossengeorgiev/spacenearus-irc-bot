@@ -12,7 +12,8 @@ var bot = {
     storage: {
         hysplit: {
             timestamp: 0,
-            data: null
+            data: null,
+            match: null
         },
         tracker: {
             timestamp: 0,
@@ -562,8 +563,9 @@ var bot = {
                 if (!error && response.statusCode == 200) {
                     ctx.storage.hysplit.timestamp = (new Date()).getTime();
                     ctx.storage.hysplit.data = JSON.parse(body);
+                    ctx.storage.hysplit.match = {};
 
-                    for(var k in ctx.storage.hysplit.data) ctx.storage.hysplit.data[k.toLowerCase()] = ctx.storage.hysplit.data[k];
+                    for(var k in ctx.storage.hysplit.data) ctx.storage.hysplit.match[k.toLowerCase()] = k;
 
                     ctx.reply_hysplit(options);
                 }
@@ -572,12 +574,72 @@ var bot = {
     },
 
     reply_hysplit: function(opts) {
-        if(opts.args in this.storage.hysplit.data) {
+        var ctx = this;
+        var args = opts.args.split(' ');
+        var show_gif = true;
+        var name = args[0];
+
+        // handle subcmd
+        switch(args[0]) {
+            case "run":
+                if(args.length == 1 || args[1] == "") {
+                    ctx.respond(opts.channel, opts.from, "To run a job, enter a callsign from the map");
+                    return;
+                }
+
+                name = encodeURIComponent(args[1]);
+
+                this._exec_admin_command(opts.from, function() {
+                    req("http://spacenear.us/tracker/single_hysplit.php?key="+ctx.config.hysplit_key+"&vehicle="+name+"&_"+(new Date()).getTime(), function(error, response, body) {
+                        if(!error && response.statusCode == 200 && body == "ok") {
+                            ctx.respond(opts.channel, opts.from, "You job has been added to the queue. Check in a few minutes");
+                        } else {
+                            ctx.respond(opts.channel, opts.from, "Error while trying to run your job... help");
+                        }
+                    });
+                }, function() {
+                    ctx.respond(opts.channel, opts.from, "You need to be an admin to do that.");
+                });
+
+                return;
+            case "":
+            case "list":
+                var callsigns = Object.keys(this.storage.hysplit.data);
+
+                if(callsigns.length == 0) {
+                    this.respond(opts.channel, opts.from, "No HYSPLITs are currently available");
+                }
+                else {
+                    this.respond(opts.channel, opts.from, [
+                            "HYSPLIT available for:",
+                            [this.color.SBJ, callsigns.join(', ')]
+                            ]);
+                            return;
+                }
+            case "kml":
+            case "kmz":
+                show_gif = false;
+                name = args[1];
+                break;
+            case "gif":
+            case "get":
+                if(args.length < 2) break;
+
+                name = args[1];
+            default:
+                break;
+        }
+
+        if(name in this.storage.hysplit.match) {
+            var name = this.storage.hysplit.match[name];
+
+            var url = (show_gif) ? this.storage.hysplit.data[name].url_gif : this.storage.hysplit.data[name].url_kmz;
+
             this.respond(opts.channel, opts.from, [
                     "HYSPLIT for",
-                    [this.color.SBJ, opts.args],
+                    [this.color.SBJ, name],
                     '-',
-                    [this.color.URL, this.storage.hysplit.data[opts.args].url_gif]
+                    [this.color.URL, url]
                     ]);
         }
         else {

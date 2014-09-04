@@ -24,7 +24,8 @@ var config =
     messageSplit: 512,
     google_api_key: "",
     geonames_api_user: "",
-    habitat_creds: "" // format: "user:pass"
+    habitat_creds: "" // format: "user:pass",
+    hysplit_key: ""
 }
 
 module.exports = config;
