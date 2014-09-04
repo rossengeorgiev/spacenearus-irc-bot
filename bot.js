@@ -453,17 +453,24 @@ var bot = {
 
                         req("http://habitat.habhub.org/habitat/_design/payload_telemetry/_view/payload_time?limit=1&startkey=[%22"+id+"%22,{}]&descending=true&include_docs=true", function(error, response, body) {
                             if(!error && response.statusCode == 200) {
-                                var json = JSON.parse(body);
+                                try {
+                                    var json = JSON.parse(body);
 
-                                if(json.rows == undefined || json.rows.length == 0) return;
+                                    // test if we got the a valid result
+                                    if(json.rows == undefined
+                                       || json.rows.length == 0
+                                       || doc.payloads.indexOf(json.rows[0].key[0]) == -1) throw "No result";
 
-                                json = json.rows[0];
+                                    json = json.rows[0];
+                                    nFound++;
 
-                                if(doc.payloads.indexOf(json.key[0]) == -1 || json.doc.data == undefined) return;
+                                    var docStatus = moment(json.key[1]*1000).fromNow();
 
-                                nFound++;
+                                    // if the payload_telemtry is not parsed, report error
+                                    if(json.doc.data == undefined) docStatus = "error";
 
-                                statuses.push([ctx.color.SBJ, json.doc.data.payload], [ctx.color.EXT, "("+moment(json.key[1]*1000).fromNow()+")"]);
+                                    statuses.push([ctx.color.SBJ, json.doc.data.payload], [ctx.color.EXT, "("+docStatus+")"]);
+                                } catch(e) {}
                             }
 
                             // run next query, until we've resolved all payloads
