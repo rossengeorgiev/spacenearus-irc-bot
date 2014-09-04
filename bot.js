@@ -446,6 +446,7 @@ var bot = {
                     var nFound = 0;
                     var count = 0;
                     var statuses = [];
+                    var found = {};
 
                     // nessesary to run queries in order and to avoid race condition
                     var next_query = function() {
@@ -462,6 +463,7 @@ var bot = {
                                        || doc.payloads.indexOf(json.rows[0].key[0]) == -1) throw "No result";
 
                                     json = json.rows[0];
+                                    found[json.key[0]] = 1;
                                     nFound++;
 
                                     var docStatus = moment(json.key[1]*1000).fromNow();
@@ -485,9 +487,13 @@ var bot = {
                                 }
 
                                 if(nFound != nPayloads) {
+                                    var untested_ids = [];
+
+                                    for(var k in doc.payloads) if(!found.hasOwnProperty(doc.payloads[k])) untested_ids.push(doc.payloads[k].substr(-4));
+
                                     if(statuses.length) msg.push("and");
 
-                                    msg.push([ctx.color.SBJ, nPayloads - nFound], "untested");
+                                    msg.push([ctx.color.SBJ, nPayloads - nFound], "untested", [ctx.color.EXT, "("+untested_ids.join(',')+")"]);
                                 }
 
                                 ctx.respond(channel,"", msg);
