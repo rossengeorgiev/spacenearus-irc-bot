@@ -581,20 +581,41 @@ var bot = {
 
         // handle subcmd
         switch(args[0]) {
+            // run a single job given a callsign
             case "run":
-                if(args.length == 1 || args[1] == "") {
-                    ctx.respond(opts.channel, opts.from, "To run a job, enter a callsign from the map");
+            // add a callsign to defaults
+            case "add":
+            // remove a callsign to defaults
+            case "remove":
+            // clear all callsigns from defeaults
+            case "clear":
+            // rerun hysplits for all callsign in defaults
+            case "rerun":
+
+                if(['rerun','clear'].indexOf(args[0]) > -1 || args.length == 1 || args[1] == "") {
+                    ctx.respond(opts.channel, opts.from, "You need to specify a callsign from the map");
                     return;
                 }
 
-                name = encodeURIComponent(args[1]);
+                name = (args.length > 1) ? encodeURIComponent(args[1]) : "";
 
                 this._exec_admin_command(opts.from, function() {
-                    req("http://spacenear.us/tracker/single_hysplit.php?key="+ctx.config.hysplit_key+"&vehicle="+name+"&_"+(new Date()).getTime(), function(error, response, body) {
+                    req("http://spacenear.us/tracker/single_hysplit.php?key="+ctx.config.hysplit_key+"&action="+args[0]+"&vehicle="+name+"&_"+(new Date()).getTime(), function(error, response, body) {
                         if(!error && response.statusCode == 200 && body == "ok") {
-                            ctx.respond(opts.channel, opts.from, "You job has been added to the queue. Check in a few minutes");
+                            switch(args[0]) {
+                                case "run":
+                                    ctx.respond(opts.channel, opts.from, "You job has been added to the queue. Check in a few minutes"); break;
+                                case "clear":
+                                    ctx.respond(opts.channel, opts.from, "Cleared defaults"); break;
+                                case "rerun":
+                                    ctx.respond(opts.channel, opts.from, "Running HYSPLIT jobs for all defaults. Hold on to your hats"); break;
+                                case "add":
+                                    ctx.respond(opts.channel, opts.from, ["Added", [ctx.color.SBJ, name]]); break;
+                                case "remove":
+                                    ctx.respond(opts.channel, opts.from, ["Removed", [ctx.color.SBJ, name]]); break;
+                            }
                         } else {
-                            ctx.respond(opts.channel, opts.from, "Error while trying to run your job... help");
+                            ctx.respond(opts.channel, opts.from, "Error while trying to run your request... help");
                         }
                     });
                 }, function() {
@@ -602,6 +623,24 @@ var bot = {
                 });
 
                 return;
+
+            // list callsigns in the defaults file
+            case "defaults":
+                req("http://spacenear.us/tracker/hysplit_defaults.json?_"+(new Date()).getTime(), function(error, response, body) {
+                    if(!error && response.statusCode == 200) {
+                        defaults = JSON.parse(body);
+
+                        if(defaults.length == 0) {
+                            ctx.respond(opts.channel, opts.from, "HYSPLIT defaults: none");
+                        }
+                        else {
+                            ctx.respond(opts.channel, opts.from, ["HYSPLIT defaults:", [ctx.color.SBJ, defaults.join(", ")]]);
+                        }
+                    }
+                });
+
+                return;
+            // list callsigns with available hysplit
             case "":
             case "list":
                 var callsigns = Object.keys(this.storage.hysplit.data);
@@ -630,6 +669,7 @@ var bot = {
                 break;
         }
 
+        // if no subcmd match, assume it's a callsign and look for hysplit
         if(name in this.storage.hysplit.match) {
             var name = this.storage.hysplit.match[name];
 
