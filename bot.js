@@ -592,7 +592,7 @@ var bot = {
             // rerun hysplits for all callsign in defaults
             case "rerun":
 
-                if(['rerun','clear'].indexOf(args[0]) > -1 || args.length == 1 || args[1] == "") {
+                if(['rerun','clear'].indexOf(args[0]) == -1 && (args.length == 1 || args[1] == "")) {
                     ctx.respond(opts.channel, opts.from, "You need to specify a callsign from the map");
                     return;
                 }
