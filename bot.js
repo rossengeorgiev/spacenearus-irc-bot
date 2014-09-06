@@ -9,6 +9,7 @@ var bot = {
     url_geocode: "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&result_type=sublocality|administrative_area_level_2|administrative_area_level_1|country&result_type=sublocality&key={APIKEY}&latlng=",
     url_geocode_ocean: "http://api.geonames.org/oceanJSON?lat={LAT}&lng={LNG}&username={USER}",
     url_hmt_vehicle: "http://habhub.org/mt/?filter=",
+    url_hmt_vehicle_focus: "http://habhub.org/mt/?focus=",
     storage: {
         hysplit: {
             timestamp: 0,
@@ -211,7 +212,7 @@ var bot = {
                                 "New vehicle on the map:",
                                 [ctx.color.SBJ, obj[name].vehicle],
                                 "-",
-                                [ctx.color.URL, ctx.url_hmt_vehicle + obj[name].vehicle]
+                                [ctx.color.URL, ctx.url_hmt_vehicle_focus + obj[name].vehicle]
                             ]);
                         } else if(ctx.storage.tracker.data[name].gps_time.getTime() + 21600000 < obj[name].gps_time.getTime())  {
                             ctx.notify([
@@ -221,7 +222,7 @@ var bot = {
                                 [ctx.color.SBJ, moment(ctx.storage.tracker.data[name].gps_time).fromNow(true)],
                                 "silence",
                                 "-",
-                                [ctx.color.URL, ctx.url_hmt_vehicle + obj[name].vehicle]
+                                [ctx.color.URL, ctx.url_hmt_vehicle_focus + obj[name].vehicle]
                             ]);
                         }
                     }
