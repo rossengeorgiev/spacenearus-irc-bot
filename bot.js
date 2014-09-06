@@ -212,7 +212,7 @@ var bot = {
                                 "New vehicle on the map:",
                                 [ctx.color.SBJ, obj[name].vehicle],
                                 "-",
-                                [ctx.color.URL, ctx.url_hmt_vehicle_focus + obj[name].vehicle]
+                                [ctx.color.URL, ctx.url_hmt_vehicle_focus + encodeURIComponent(obj[name].vehicle)]
                             ]);
                         } else if(ctx.storage.tracker.data[name].gps_time.getTime() + 21600000 < obj[name].gps_time.getTime())  {
                             ctx.notify([
@@ -222,7 +222,7 @@ var bot = {
                                 [ctx.color.SBJ, moment(ctx.storage.tracker.data[name].gps_time).fromNow(true)],
                                 "silence",
                                 "-",
-                                [ctx.color.URL, ctx.url_hmt_vehicle_focus + obj[name].vehicle]
+                                [ctx.color.URL, ctx.url_hmt_vehicle_focus + encodeURIComponent(obj[name].vehicle)]
                             ]);
                         }
                     }
@@ -751,7 +751,7 @@ var bot = {
                             ctx.respond(opts.channel, opts.from, ["Wiki page", [ctx.color.SBJ, submatch[2]], "-", [ctx.color.URL, "http://ukhas.org.uk" + submatch[1]]]);
                         }
                     } else {
-                        ctx.respond(opts.channel, opts.from, ["Found", [ctx.color.SBJ, match.length], "results for you query -", [ctx.color.URL, "http://ukhas.org.uk/start?do=search&id="+opts.args]]);
+                        ctx.respond(opts.channel, opts.from, ["Found", [ctx.color.SBJ, match.length], "results for you query -", [ctx.color.URL, "http://ukhas.org.uk/start?do=search&id="+encodeURIComponent(opts.args)]]);
                     }
                 } else {
                     ctx.respond(opts.channel, opts.from, "No results for your query");
