@@ -156,13 +156,27 @@ var bot = {
                 throw error;
             }
 
-            ctx.notify("exiting.. help", true, true);
+            ctx.notify("got confused... send help", true, true);
             ctx.crashed = true;
 
             setTimeout(function() {
                 throw error;
             },1000);
         });
+
+        // exit gracefully on SIGINT|SIGTERM|SIGQUIT
+        var quitHandler =  function() {
+            console.log("Exiting...");
+            ctx.notify("is going for a nap.", true, true);
+
+            setTimeout(function() {
+                process.exit();
+            }, 1000);
+        };
+
+        process.on("SIGINT", quitHandler);
+        process.on("SIGTERM", quitHandler);
+        process.on("SIGQUIT", quitHandler);
 
     },
 
