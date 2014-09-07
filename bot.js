@@ -684,9 +684,11 @@ var bot = {
                 break;
         }
 
+        name = name.toLowerCase()
+
         // if no subcmd match, assume it's a callsign and look for hysplit
         if(name in this.storage.hysplit.match) {
-            var name = this.storage.hysplit.match[name];
+            name = this.storage.hysplit.match[name];
 
             var url = (show_gif) ? this.storage.hysplit.data[name].url_gif : this.storage.hysplit.data[name].url_kmz;
 
