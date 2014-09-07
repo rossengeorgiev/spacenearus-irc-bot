@@ -619,15 +619,15 @@ var bot = {
                         if(!error && response.statusCode == 200 && body == "ok") {
                             switch(args[0]) {
                                 case "run":
-                                    ctx.respond(opts.channel, opts.from, "You job has been added to the queue. Check in a few minutes"); break;
+                                    ctx.respond(opts.channel, opts.from, "Your job has been added to the queue. Check in a few minutes"); break;
                                 case "clear":
                                     ctx.respond(opts.channel, opts.from, "Cleared defaults"); break;
                                 case "rerun":
                                     ctx.respond(opts.channel, opts.from, "Running HYSPLIT jobs for all defaults. Hold on to your hats"); break;
                                 case "add":
-                                    ctx.respond(opts.channel, opts.from, ["Added", [ctx.color.SBJ, name]]); break;
+                                    ctx.respond(opts.channel, opts.from, ["Added", [ctx.color.SBJ, name], "to defaults"]); break;
                                 case "remove":
-                                    ctx.respond(opts.channel, opts.from, ["Removed", [ctx.color.SBJ, name]]); break;
+                                    ctx.respond(opts.channel, opts.from, ["Removed", [ctx.color.SBJ, name], "from defaults"]); break;
                             }
                         } else {
                             ctx.respond(opts.channel, opts.from, "Error while trying to run your request... help");
