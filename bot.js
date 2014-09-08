@@ -335,7 +335,7 @@ var bot = {
     _transmission_make_pretty: function(xref) {
         var ctx = this, msg = [];
 
-        if(xref.description != undefined) msg.push([ctx.color.SBJ, xref.description], "-");
+        if(xref.description != undefined) msg.push([ctx.color.SBJ, xref.description.trim()], "-");
 
         msg.push([ctx.color.SBJ, (xref.frequency / 1000000) + " MHz " + xref.mode]);
 
