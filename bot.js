@@ -93,8 +93,9 @@ var bot = {
 
                     case "payloads":
                     case "payload":
-                    case "dial":
                                    ctx.handle_payloads(opts); break;
+                    case "dial":
+                                   ctx.handle_dial(opts); break;
 
                     case "window": ctx.handle_window(opts); break;
 
@@ -1022,6 +1023,88 @@ var bot = {
                     }
 
                     if(!found) ctx.respond(opts.channel, opts.from, "Can't find a flight doc matching your query");
+                }
+                else {
+                    ctx.respond(opts.channel, opts.from, "There are no flights currently :(");
+                }
+            }
+
+        });
+    },
+
+    handle_dial: function(opts) {
+        var ctx = this;
+
+        req("http://habitat.habhub.org/habitat/_design/flight/_view/end_start_including_payloads?include_docs=true&startkey=["+((new Date()).getTime()/1000)+"]", function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                var data = JSON.parse(body);
+
+                if(data.rows.length) {
+                    var found = false;
+                    var payload_docs = {};
+
+                    // find all payload_configuration ids
+                    for(var k in data.rows) {
+                        var short_id = data.rows[k].id.substr(-4);
+                        var doc = data.rows[k].doc;
+
+                        if(doc.type == "payload_configuration" && (short_id == opts.args || ctx._payload_match_name(opts.args, doc))) {
+                            found = true;
+                            payload_docs[doc._id] = ["Latest dials for",[ctx.color.SBJ, doc.name], [ctx.color.EXT, "("+short_id+"):"]];
+                        }
+                    }
+
+                    // use payload_config ids to find the latest telemetry for each one
+                    if(found) {
+                        var idx = 0;
+
+                        var step_callback = function() {
+                            if(idx >= Object.keys(payload_docs).length) return;
+
+                            var next_id = Object.keys(payload_docs)[idx];
+
+                            req("http://habitat.habhub.org/habitat/_design/payload_telemetry/_view/payload_time?startkey=[%22"+next_id+"%22,{}]&include_docs=true&limit=5&descending=true", function(error, response, body) {
+                                if (!error && response.statusCode == 200) {
+                                    var data = JSON.parse(body);
+                                    var freqs = {}
+
+                                    if(data.rows.length >= 0 && data.rows[0].key[0] == next_id) {
+                                        for(var k in data.rows) {
+                                            for(var callsign in data.rows[k].doc.receivers) {
+                                                try {
+                                                    var freq = data.rows[k].doc.receivers[callsign].rig_info.frequency;
+                                                    if(freq != undefined) freqs[freq / 1000] = 1;
+                                                } catch(e) {
+                                                    continue;
+                                                }
+                                            }
+
+                                        }
+                                    }
+
+                                    var msg = payload_docs[next_id];
+
+                                    if(Object.keys(freqs).length == 0) {
+                                        msg.push("none");
+                                    }
+                                    else {
+                                        msg.push([ctx.color.SBJ, Object.keys(freqs).join(" MHz, ") + " MHz"])
+                                    }
+
+                                    ctx.respond(opts.channel, opts.from, msg);
+                                }
+
+                                idx++;
+                                step_callback();
+                            });
+                        }
+
+                        step_callback();
+
+                    }
+                    else {
+                        ctx.respond(opts.channel, opts.from, "Can't find a flight doc matching your query");
+                    }
                 }
                 else {
                     ctx.respond(opts.channel, opts.from, "There are no flights currently :(");
