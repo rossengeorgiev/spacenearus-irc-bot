@@ -756,7 +756,7 @@ var bot = {
     handle_wiki: function(opts) {
         var ctx = this;
 
-        req("http://ukhas.org.uk/start?do=search&id="+opts.args, function(error, response, body) {
+        req("http://ukhas.org.uk/start?do=search&id="+encodeURIComponent(opts.args), function(error, response, body) {
             if (!error && response.statusCode == 200) {
                 var match = body.match(/search_quickhits.*ul/g);
                 if(match) {
