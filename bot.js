@@ -157,12 +157,14 @@ var bot = {
                 throw error;
             }
 
+            console.log("Hit an Exception:\n", error);
+
             ctx.notify("got confused... send help", true, true);
             ctx.crashed = true;
 
             setTimeout(function() {
                 throw error;
-            },1000);
+            }, 1000);
         });
 
         // exit gracefully on SIGINT|SIGTERM|SIGQUIT
