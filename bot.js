@@ -1075,7 +1075,13 @@ var bot = {
                                             for(var callsign in data.rows[k].doc.receivers) {
                                                 try {
                                                     var freq = data.rows[k].doc.receivers[callsign].rig_info.frequency;
-                                                    if(freq != undefined) freqs[freq / 1000] = 1;
+                                                    if(freq != undefined) {
+                                                        if(freq < 1000000) {
+                                                            freqs[freq / 1000] = 1;
+                                                        } else {
+                                                            freqs[freq / 1000000] = 1;
+                                                        }
+                                                    }
                                                 } catch(e) {
                                                     continue;
                                                 }
