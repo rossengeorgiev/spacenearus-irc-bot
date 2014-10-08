@@ -489,9 +489,16 @@ var bot = {
 
                                     // if the payload_telemtry is not parsed, report error
                                     if(json.doc.data == undefined) docStatus = "error";
+                                    // if _fix_invalid flag is true
+                                    else if(json.doc.data.hasOwnProperty("_fix_invalid") && json.doc.data['_fix_invalid'] === true) {
+                                        docStatus += ", nofix";
+                                    }
 
-                                    statuses.push([ctx.color.SBJ, json.doc.data.payload], [ctx.color.EXT, "("+docStatus+")"]);
-                                } catch(e) {}
+                                    statuses.push([ctx.color.SBJ, json.doc.data.payload],[ctx.color.EXT, "("+docStatus+")"]);
+                                } catch (e) {
+                                    console.error(e);
+                                }
+
                             }
 
                             // run next query, until we've resolved all payloads
