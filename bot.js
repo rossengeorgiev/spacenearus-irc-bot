@@ -445,7 +445,12 @@ var bot = {
                 this.respond(channel,"", msg); msg = [];
 
                 // window
-                msg.push("Window:", [this.color.SBJ, moment(new Date(doc.start)).calendar()],"to",[this.color.SBJ, moment(new Date(doc.end)).calendar()]);
+                msg.push("Window:", [this.color.SBJ, moment(new Date(doc.start)).calendar() + " UTC"],"to",[this.color.SBJ, moment(new Date(doc.end)).calendar() + " UTC"]);
+
+                //timezone
+                var tzoffset = -(moment(doc.start)._tzm) / 60;
+                tzoffset = (tzoffset >= 0) ? "+"+tzoffset : tzoffset;
+                msg.push([this.color.EXT, "("+doc.launch.timezone+", "+tzoffset+")"]);
 
                 this.respond(channel,"", msg); msg = [];
 
