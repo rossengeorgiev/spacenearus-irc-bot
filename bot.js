@@ -455,7 +455,7 @@ var bot = {
                 this.respond(channel,"", msg); msg = [];
 
                 // launch time
-                msg.push("Launch:", [this.color.SBJ, moment(new Date(doc.launch.time)).calendar()]);
+                msg.push("Launch:", [this.color.SBJ, moment(new Date(doc.launch.time)).calendar() + " UTC"]);
 
                 // place
                 msg.push("from", [this.color.SBJ, doc.metadata.location]);
