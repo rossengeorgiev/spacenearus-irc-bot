@@ -117,9 +117,9 @@ var bot = {
                                     function() {
                                         ctx.respond(opts.channel, opts.from, "Calm down! You need to be an admin to do that.");
                                     });
-                                    break
+                                    break;
 
-                                defeault: break;
+                                default: break;
                             }
                         }
                 }
@@ -143,7 +143,7 @@ var bot = {
 
         // additional handlers
         this.client.addListener('join', function(chan, nick, msg) {
-            if(nick.indexOf(ctx.config.nick) == 0) ctx.init_fetch();
+            if(nick.indexOf(ctx.config.nick) === 0) ctx.init_fetch();
         });
 
         this.client.addListener('error', function(message) {
@@ -220,8 +220,8 @@ var bot = {
                     var name = data[k].vehicle.toLowerCase();
 
                     obj[name] = data[k];
-                    obj[name]['gps_time'] = new Date(obj[name]['gps_time'] + "Z");
-                    obj[name]['server_time'] = new Date(obj[name]['server_time'] + "Z");
+                    obj[name].gps_time = new Date(obj[name].gps_time + "Z");
+                    obj[name].server_time = new Date(obj[name].server_time + "Z");
 
                     if(ctx.storage.tracker.data) {
                         if(!(name in ctx.storage.tracker.data)) {
@@ -250,14 +250,14 @@ var bot = {
                 console.log(error);
             }
 
-            setTimeout(function() { ctx.fetch_latest_positions() }, 5000);
+            setTimeout(function() { ctx.fetch_latest_positions(); }, 5000);
         });
     },
 
     // wrapper function for nice looking reponses
 
     respond: function(dest, to, msg, action) {
-        action = (action == undefined || typeof action != "boolean") ? false : action;
+        action = (action === undefined || typeof action != "boolean") ? false : action;
 
         var resp = (to) ? irc.colors.wrap(this.color.SBJ, to) + ": " : "";
 
@@ -282,8 +282,8 @@ var bot = {
     // notify
 
     notify: function(msg, all, action) {
-        action = (action == undefined || typeof action != "boolean") ? false : action;
-        all = (all == undefined || typeof all != "boolean") ? false : all;
+        action = (action === undefined || typeof action != "boolean") ? false : action;
+        all = (all === undefined || typeof all != "boolean") ? false : all;
 
         var list = (all) ? this.config.channels : this.config.channels_notify;
 
@@ -338,7 +338,7 @@ var bot = {
     _transmission_make_pretty: function(xref) {
         var ctx = this, msg = [];
 
-        if(xref.description != undefined) msg.push([ctx.color.SBJ, xref.description.trim()], "-");
+        if(xref.description !== undefined) msg.push([ctx.color.SBJ, xref.description.trim()], "-");
 
         msg.push([ctx.color.SBJ, (xref.frequency / 1000000) + " MHz " + xref.mode]);
 
@@ -366,7 +366,7 @@ var bot = {
         if(!xref.doc) {
             this.respond(opts.channel, opts.from, "I haven't seen a flight doc id");
             return;
-        } else if(xref.doc.type == undefined || xref.doc.type != "flight") {
+        } else if(xref.doc.type === undefined || xref.doc.type != "flight") {
             this.respond(opts.channel, opts.from, ["I can't aprove a doc of type", [this.color.SBJ, xref.doc.type]]);
             return;
         } else if(xref.doc.type == "flight" && xref.doc.approved) {
@@ -413,9 +413,9 @@ var bot = {
         var ctx = this;
 
         // handle variables
-        shortid = (shortid == undefined || typeof shortid != "boolean") ? false : shortid;
-        context = (context == undefined || typeof context != "boolean") ? false : context;
-        addurl = (addurl == undefined || typeof addurl != "boolean") ? false : addurl;
+        shortid = (shortid === undefined || typeof shortid != "boolean") ? false : shortid;
+        context = (context === undefined || typeof context != "boolean") ? false : context;
+        addurl = (addurl === undefined || typeof addurl != "boolean") ? false : addurl;
 
         // remember the doc
         if(context) {
@@ -424,6 +424,7 @@ var bot = {
         }
 
         var short_id = (shortid) ? doc._id.substr(-4) : doc._id;
+        var msg;
 
         switch(doc.type) {
             case "payload_telemetry":
@@ -431,9 +432,9 @@ var bot = {
                 this.respond(channel,"", ["Payload telemetry", [this.color.SBJ, doc._id],[this.color.EXT,(doc.data._parsed)?"(parsed)":"(not prased)"],"raw:", [this.color.SBJ, raw]]);
                 break;
             case "flight":
-                var msg = ["Flight", [this.color.SBJ, doc.name]];
                 var lat = this.format_number(doc.launch.location.latitude, 5);
                 var lng = this.format_number(doc.launch.location.longitude, 5);
+                msg = ["Flight", [this.color.SBJ, doc.name]];
 
                 // main info
                 msg.push([this.color.EXT, "("+short_id+", "+(doc.approved?"approved":"not approved")+", "+doc.payloads.length+" payload"+(doc.payloads.length > 1 ? 's':'')+")"]);
@@ -482,9 +483,9 @@ var bot = {
                                     var json = JSON.parse(body);
 
                                     // test if we got the a valid result
-                                    if(json.rows == undefined
-                                       || json.rows.length == 0
-                                       || doc.payloads.indexOf(json.rows[0].key[0]) == -1) throw "No result";
+                                    if(json.rows === undefined ||
+                                       json.rows.length === 0 ||
+                                       doc.payloads.indexOf(json.rows[0].key[0]) == -1) throw "No result";
 
                                     json = json.rows[0];
                                     found[json.key[0]] = 1;
@@ -493,9 +494,9 @@ var bot = {
                                     var docStatus = moment(json.key[1]*1000).fromNow();
 
                                     // if the payload_telemtry is not parsed, report error
-                                    if(json.doc.data == undefined) docStatus = "error";
+                                    if(json.doc.data === undefined) docStatus = "error";
                                     // if _fix_invalid flag is true
-                                    else if(json.doc.data.hasOwnProperty("_fix_invalid") && json.doc.data['_fix_invalid'] === true) {
+                                    else if(json.doc.data.hasOwnProperty("_fix_invalid") && json.doc.data._fix_invalid === true) {
                                         docStatus += ", nofix";
                                     }
 
@@ -537,7 +538,8 @@ var bot = {
                 }
                 break;
             case "payload_configuration":
-                var msg = ["Payload config",[this.color.SBJ, doc.name], [this.color.EXT, "("+short_id+")"]];
+                var k;
+                msg = ["Payload config",[this.color.SBJ, doc.name], [this.color.EXT, "("+short_id+")"]];
 
                 if(addurl) msg.push("-", [this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]);
 
@@ -545,13 +547,13 @@ var bot = {
 
                 // display callsigns
                 msg = ["Callsign(s):"];
-                if(doc.sentences.length == 0) {
+                if(doc.sentences.length === 0) {
                     msg.push("none");
                     this.respond(channel, "", msg);
                 }
                 else {
                     var last = doc.sentences.length - 1;
-                    for(var k in doc.sentences) msg.push([this.color.SBJ, doc.sentences[k].callsign + ((last != k)?',':'')]);
+                    for(k in doc.sentences) msg.push([this.color.SBJ, doc.sentences[k].callsign + ((last != k)?',':'')]);
 
                     this.respond(channel, "", msg);
                 }
@@ -559,9 +561,9 @@ var bot = {
 
                 // display transmissions
                 if(doc.transmissions.length > 0) {
-                    for(var k in doc.transmissions) {
+                    for(k in doc.transmissions) {
                         var xref = doc.transmissions[k];
-                        msg = ["Transmission #"+k+":"]
+                        msg = ["Transmission #"+k+":"];
 
                         msg = msg.concat(this._transmission_make_pretty(xref));
 
@@ -599,7 +601,7 @@ var bot = {
 
                     ctx.reply_hysplit(options);
                 }
-            })
+            });
         }
     },
 
@@ -622,7 +624,7 @@ var bot = {
             // rerun hysplits for all callsign in defaults
             case "rerun":
 
-                if(['rerun','clear'].indexOf(args[0]) == -1 && (args.length == 1 || args[1] == "")) {
+                if(['rerun','clear'].indexOf(args[0]) == -1 && (args.length == 1 || args[1] === "")) {
                     ctx.respond(opts.channel, opts.from, "You need to specify a callsign from the map");
                     return;
                 }
@@ -660,7 +662,7 @@ var bot = {
                     if(!error && response.statusCode == 200) {
                         defaults = JSON.parse(body);
 
-                        if(defaults.length == 0) {
+                        if(defaults.length === 0) {
                             ctx.respond(opts.channel, opts.from, "HYSPLIT defaults: none");
                         }
                         else {
@@ -675,7 +677,7 @@ var bot = {
             case "list":
                 var callsigns = Object.keys(this.storage.hysplit.data);
 
-                if(callsigns.length == 0) {
+                if(callsigns.length === 0) {
                     this.respond(opts.channel, opts.from, "No HYSPLITs are currently available");
                 }
                 else {
@@ -699,7 +701,7 @@ var bot = {
                 break;
         }
 
-        name = name.toLowerCase()
+        name = name.toLowerCase();
 
         // if no subcmd match, assume it's a callsign and look for hysplit
         if(name in this.storage.hysplit.match) {
@@ -794,7 +796,7 @@ var bot = {
     },
 
     handle_track: function(opts) {
-        var url = this.url_hmt_vehicle + opts.args.split(/[, ;]/).filter(function(val) { return val != "";}).join(";")
+        var url = this.url_hmt_vehicle + opts.args.split(/[, ;]/).filter(function(val) { return val !== "";}).join(";");
         this.respond(opts.channel, opts.from, ["Here you go -", [this.color.URL, url]]);
     },
 
@@ -919,7 +921,8 @@ var bot = {
                     var flight_id = null;
 
                     // if the argument is a callsign, try to find the payload_configuration for flight_id
-                    for(var k in data.rows) {
+                    var k;
+                    for(k in data.rows) {
                         var xref = data.rows[k];
 
                         if(xref.doc.type == "payload_configuration" && ctx._payload_match_name(opts.args, xref.doc)) {
@@ -928,11 +931,11 @@ var bot = {
                         }
                     }
 
-                    for(var k in data.rows) {
+                    for(k in data.rows) {
                         var id = data.rows[k].id;
                         var doc = data.rows[k].doc;
 
-                        var match = (flight_id != null) ? id == flight_id : id.substr(-4) == opts.args;
+                        var match = (flight_id !== null) ? id == flight_id : id.substr(-4) == opts.args;
 
                         if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime() && match) {
                             var msg = ["Flight", [ctx.color.EXT, "(" + id.substr(-4) + "):"], [ctx.color.SBJ, doc.name]];
@@ -943,7 +946,7 @@ var bot = {
                             msg.push([ctx.color.EXT, "("+doc.payloads.length+" payload"+(doc.payloads.length > 1 ? 's':'')+")"], "-");
 
                             // time
-                            msg.push("Launch date", [ctx.color.SBJ, moment(new Date(doc.launch.time)).calendar()]),
+                            msg.push("Launch date", [ctx.color.SBJ, moment(new Date(doc.launch.time)).calendar()]);
 
                             // place
                             msg.push("from");
@@ -991,7 +994,7 @@ var bot = {
                             found = true;
 
                             var msg = ["Payload",[ctx.color.SBJ, doc.name], [ctx.color.EXT, "("+short_id+")"]];
-                            var callsigns = [];
+                            var callsigns = [], j;
 
                             if(doc.sentences.length == 1) {
                                 msg.push([ctx.color.SBJ, "$$"+doc.sentences[0].callsign]);
@@ -999,12 +1002,12 @@ var bot = {
                             else if(doc.sentences.length > 1) {
                                 var last = doc.sentences.length - 1;
 
-                                for(var j in doc.sentences)
+                                for(j in doc.sentences)
                                     callsigns.push([ctx.color.SBJ, doc.sentences[j].callsign + ((last != j)?',':'')]);
                             }
 
                             // keep it short if we have less than 2 transmissions
-                            if(doc.transmissions.length == 0) {
+                            if(doc.transmissions.length === 0) {
                                 msg.push("- no transmissions");
                                 ctx.respond(opts.channel, opts.from, msg);
 
@@ -1024,10 +1027,10 @@ var bot = {
                                 ctx.respond(opts.channel, opts.from, msg);
                                 if(callsigns.length > 1) ctx.respond(opts.channel, opts.from, ["Callsigns:"].concat(callsigns));
 
-                                for(var j in doc.transmissions) {
+                                for(j in doc.transmissions) {
                                     xref = doc.transmissions[j];
 
-                                    msg = ["Tranmission #"+j+":"]
+                                    msg = ["Tranmission #"+j+":"];
 
                                     msg = msg.concat(ctx._transmission_make_pretty(xref));
                                     ctx.respond(opts.channel, opts.from, msg);
@@ -1080,14 +1083,14 @@ var bot = {
                             req("http://habitat.habhub.org/habitat/_design/payload_telemetry/_view/payload_time?startkey=[%22"+next_id+"%22,{}]&include_docs=true&limit=5&descending=true", function(error, response, body) {
                                 if (!error && response.statusCode == 200) {
                                     var data = JSON.parse(body);
-                                    var freqs = {}
+                                    var freqs = {};
 
                                     if(data.rows.length >= 0 && data.rows[0].key[0] == next_id) {
                                         for(var k in data.rows) {
                                             for(var callsign in data.rows[k].doc.receivers) {
                                                 try {
                                                     var freq = data.rows[k].doc.receivers[callsign].rig_info.frequency;
-                                                    if(freq != undefined) {
+                                                    if(freq !== undefined) {
                                                         if(freq < 1000000) {
                                                             freqs[freq / 1000] = 1;
                                                         } else {
@@ -1104,11 +1107,11 @@ var bot = {
 
                                     var msg = payload_docs[next_id];
 
-                                    if(Object.keys(freqs).length == 0) {
+                                    if(Object.keys(freqs).length === 0) {
                                         msg.push("none");
                                     }
                                     else {
-                                        msg.push([ctx.color.SBJ, Object.keys(freqs).join(" MHz, ") + " MHz"])
+                                        msg.push([ctx.color.SBJ, Object.keys(freqs).join(" MHz, ") + " MHz"]);
                                     }
 
                                     ctx.respond(opts.channel, opts.from, msg);
@@ -1117,7 +1120,7 @@ var bot = {
                                 idx++;
                                 step_callback();
                             });
-                        }
+                        };
 
                         step_callback();
 
@@ -1145,7 +1148,8 @@ var bot = {
                     var flight_id = null;
 
                     // if the argument is a callsign, try to find the payload_configuration for flight_id
-                    for(var k in data.rows) {
+                    var k;
+                    for(k in data.rows) {
                         var xref = data.rows[k];
 
                         if(xref.doc.type == "payload_configuration" && ctx._payload_match_name(opts.args, xref.doc)) {
@@ -1154,11 +1158,11 @@ var bot = {
                         }
                     }
 
-                    for(var k in data.rows) {
+                    for(k in data.rows) {
                         var id = data.rows[k].id;
                         var doc = data.rows[k].doc;
 
-                        var match = (flight_id != null) ? id == flight_id : id.substr(-4) == opts.args;
+                        var match = (flight_id !== null) ? id == flight_id : id.substr(-4) == opts.args;
 
                         if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime() && match) {
                             ctx.respond(opts.channel, opts.from, [
@@ -1184,8 +1188,8 @@ var bot = {
 
         });
     },
-}
+};
 
 module.exports = bot;
 
-if(module.parent == null) bot.init(config);
+if(module.parent === null) bot.init(config);
