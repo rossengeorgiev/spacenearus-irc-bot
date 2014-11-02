@@ -18,7 +18,8 @@ var bot = {
         },
         tracker: {
             timestamp: 0,
-            data: null
+            data: null,
+            latest_pos_id: 0
         },
         doclookup: {
             timestamp: 0,
@@ -210,14 +211,20 @@ var bot = {
     fetch_latest_positions: function() {
         var ctx = this;
 
-        req("http://spacenear.us/tracker/datanew.php?mode=latest&type=positions&format=json&max_positions=0&position_id=0", function(error, response, body) {
+        req("http://spacenear.us/tracker/datanew.php?mode=latest&type=positions&format=json&max_positions=0&position_id="+ctx.storage.tracker.latest_pos_id,
+            function(error, response, body) {
+
             if (!error && response.statusCode == 200) {
                 ctx.storage.tracker.timestamp = (new Date()).getTime();
                 var data = JSON.parse(body).positions.position;
 
                 var obj = {};
+                var lowest_pos_id = null;
                 for(var k in data) {
+                    if(lowest_pos_id === null || lowest_pos_id > data[k].position_id) lowest_pos_id = data[k].position_id;
+
                     var name = data[k].vehicle.toLowerCase();
+
 
                     obj[name] = data[k];
                     obj[name].gps_time = new Date(obj[name].gps_time + "Z");
@@ -245,6 +252,7 @@ var bot = {
                     }
                 }
                 ctx.storage.tracker.data = obj;
+                ctx.storage.tracker.latest_pos_id = lowest_pos_id - 1;
             }
             else {
                 console.log(error);
