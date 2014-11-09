@@ -656,7 +656,24 @@ var bot = {
                 });
 
                 return;
-
+            case "autotrack":
+                var val = (args.length > 1) ? args[1] : "";
+                this._exec_admin_command(opts.from, function() {
+                    req({url:"http://127.0.0.1:9993/aprs/importer/auto?enable="+val, json: true, timeout: 2000}, function(error, response, body) {
+                            if(!error && response.statusCode == 200 && body.status == "ok") {
+                                ctx.respond(opts.channel, opts.from, "Auto-including of balloons is " + (body.enabled ? "enabled" : "disabled") + ".");
+                            } else {
+                                if(response === undefined) {
+                                    ctx.respond(opts.channel, opts.from, "APRS Service API didn't respond in time");
+                                } else {
+                                    ctx.respond(opts.channel, opts.from, "Error: " + body.message);
+                                }
+                            }
+                    });
+                }, function() {
+                    ctx.respond(opts.channel, opts.from, "You need to be an admin to do that.");
+                });
+                break;
             case "":
             case "list":
                 req({url:"http://127.0.0.1:9993/aprs/importer", json: true, timeout: 2000}, function(error, response, body) {
@@ -681,6 +698,23 @@ var bot = {
                                 }
 
                                 ctx.respond(opts.channel, opts.from, msg);
+                            }
+                        } else {
+                            if(response === undefined) {
+                                ctx.respond(opts.channel, opts.from, "APRS Service API didn't respond in time");
+                            } else {
+                                ctx.respond(opts.channel, opts.from, "Error: " + body.message);
+                            }
+                        }
+                });
+                break;
+            case "list-bal":
+                req({url:"http://127.0.0.1:9993/aprs/allballoons", json: true, timeout: 2000}, function(error, response, body) {
+                        if(!error && response.statusCode == 200 && body.status == "ok") {
+                            if(body.result.length === 0) {
+                                ctx.respond(opts.channel, opts.from, "Recent balloons: none");
+                            } else {
+                                ctx.respond(opts.channel, opts.from, "Recent balloons: "+body.result.join(", "));
                             }
                         } else {
                             if(response === undefined) {
