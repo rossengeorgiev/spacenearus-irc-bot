@@ -72,6 +72,7 @@ var bot = {
 
                 switch(cmd) {
                     // regular commands
+                    case "aprs": ctx.handle_aprs(opts); break;
                     case "hysplit": ctx.handle_hysplit(opts); break;
                     case "track": ctx.handle_track(opts); break;
 
@@ -590,6 +591,111 @@ var bot = {
         }
     },
 
+    // handle aprs
+
+    handle_aprs: function(opts) {
+        var ctx = this;
+        var args = opts.args.split(' ');
+        var method = "GET";
+
+        // handle subcmd
+        switch(args[0]) {
+            // add APRS callsign to be imported
+            case "add":
+            // remove a callsign
+            case "remove":
+                method = (args[0] == "add") ? "PUT" : "DELETE";
+
+                if(args.length == 1 || args[1] === "") {
+                    ctx.respond(opts.channel, opts.from, "You need to specify a valid APRS callsing");
+                    return;
+                }
+
+                callsign = args[1];
+                display_callsign = (args.length > 2) ? args[2] : "";
+
+                body = { callsign: callsign, display_callsign: display_callsign };
+
+                this._exec_admin_command(opts.from, function() {
+                    req({
+                        url: "http://127.0.0.1:9993/aprs/importer",
+                        json: true,
+                        body: body,
+                        method: method,
+                        timeout: 2000
+                    }, function(error, response, body) {
+                        if(!error && response.statusCode == 200 && body.status == "ok") {
+                            var msg = [];
+                            switch(args[0]) {
+                                case "add":
+                                        msg.push("Added", [ctx.color.SBJ, callsign]);
+
+                                        if(display_callsign !== "") msg.push("as",[ctx.color.EXT, "("+display_callsign+")"]);
+
+                                        msg.push("to APRS Importer");
+                                    break;
+                                case "remove":
+                                        msg.push("Removed", [ctx.color.SBJ, callsign]);
+
+                                        if(display_callsign !== "") msg.push("as",[ctx.color.EXT, "("+display_callsign+")"]);
+
+                                        msg.push("from APRS Importer");
+                                    break;
+                            }
+                            ctx.respond(opts.channel, opts.from, msg);
+                        } else {
+                            if(response === undefined) {
+                                ctx.respond(opts.channel, opts.from, "APRS Service API didn't respond in time");
+                            } else {
+                                ctx.respond(opts.channel, opts.from, "Error: " + body.message);
+                            }
+                        }
+                    });
+                }, function() {
+                    ctx.respond(opts.channel, opts.from, "You need to be an admin to do that.");
+                });
+
+                return;
+
+            case "":
+            case "list":
+                req({url:"http://127.0.0.1:9993/aprs/importer", json: true, timeout: 2000}, function(error, response, body) {
+                        if(!error && response.statusCode == 200 && body.status == "ok") {
+                            var len = Object.keys(body.result).length;
+
+                            if(len === 0) {
+                                ctx.respond(opts.channel, opts.from, "Tracking via APRS: none");
+                            } else {
+                                var msg = ["Tracking via APRS:"];
+                                var count = 0;
+
+                                for(var callsign in body.result) {
+                                    count += 1;
+
+                                    if(body.result[callsign].display_callsign === "") {
+                                        msg.push([ctx.color.SBJ, callsign + ((len==count)?'':',')]);
+                                    } else {
+                                        msg.push([ctx.color.SBJ, callsign],
+                                                 [ctx.color.EXT, "("+body.result[callsign].display_callsign+")" + ((len==count)?'':',')]);
+                                    }
+                                }
+
+                                ctx.respond(opts.channel, opts.from, msg);
+                            }
+                        } else {
+                            if(response === undefined) {
+                                ctx.respond(opts.channel, opts.from, "APRS Service API didn't respond in time");
+                            } else {
+                                ctx.respond(opts.channel, opts.from, "Error: " + body.message);
+                            }
+                        }
+                });
+                break;
+            default:
+                break;
+        }
+    },
+
     // handle hysplit
 
     handle_hysplit: function(options) {
@@ -693,8 +799,8 @@ var bot = {
                             "HYSPLIT available for:",
                             [this.color.SBJ, callsigns.join(', ')]
                             ]);
-                            return;
                 }
+                break;
             case "kml":
             case "kmz":
                 show_gif = false;
@@ -705,6 +811,7 @@ var bot = {
                 if(args.length < 2) break;
 
                 name = args[1];
+                break;
             default:
                 break;
         }
