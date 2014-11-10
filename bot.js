@@ -656,6 +656,64 @@ var bot = {
                 });
 
                 return;
+            case "info":
+            case "ping":
+                if(args.length == 1 || args[1] === "") {
+                    ctx.respond(opts.channel, opts.from, "You need to specify a valid APRS callsing");
+                    return;
+                }
+
+                var mode = args[0];
+                var callsign = args[1].toUpperCase();
+
+                req({url:"http://127.0.0.1:9993/aprs/info/"+callsign, json: true, timeout: 2000}, function(error, response, body) {
+                        if(!error && response.statusCode == 200 && body.status == "ok") {
+                            if(body.result === null) {
+                                ctx.respond(opts.channel, opts.from, "Cannot locate the callsign.");
+                            }
+
+                            switch(mode) {
+                                case "info":
+                                    var lat = body.result[0];
+                                    var lng = body.result[1];
+                                    var timestamp = body.result[4] * 1000;
+                                    var dt_minutes = moment().diff(moment(timestamp), 'minutes');
+
+                                    ctx.resolve_location(lat,lng, function(name) {
+                                        var msg = [[ctx.color.SBJ, callsign], (dt_minutes<5)?"is":"was", "near"];
+
+                                        if(name) {
+                                            msg.push([ctx.color.SBJ, name], [ctx.color.EXT, '('+ctx.format_number(lat,5)+','+ctx.format_number(lng,5)+')']);
+                                        }
+                                        else {
+                                            msg.push([ctx.color.SBJ, ctx.format_number(lat,5)+','+ctx.format_number(lng,5)]);
+                                        }
+
+                                        if(dt_minutes >= 5) msg.push("about", [ctx.color.SBJ, moment(timestamp).fromNow()]);
+
+                                        msg.push("-", [ctx.color.URL, "http://aprs.fi/"+callsign]);
+
+                                        ctx.respond(opts.channel, opts.from, msg);
+                                    });
+                                    break;
+                                case "ping":
+                                    ctx.respond(opts.channel, opts.from, [
+                                        "Last contact with",
+                                        [ctx.color.SBJ, callsign],
+                                        "was",
+                                        [ctx.color.SBJ, moment(body.result[4]*1000).fromNow()]
+                                        ]);
+                                    break;
+                            }
+                        } else {
+                            if(response === undefined) {
+                                ctx.respond(opts.channel, opts.from, "APRS Service API didn't respond in time");
+                            } else {
+                                ctx.respond(opts.channel, opts.from, "Error: " + body.message);
+                            }
+                        }
+                });
+                break;
             case "autotrack":
                 var val = (args.length > 1) ? args[1] : "";
                 this._exec_admin_command(opts.from, function() {
