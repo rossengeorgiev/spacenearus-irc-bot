@@ -37,6 +37,7 @@ var bot = {
 
     client: null,
     crashed: false,
+    snus_conn_problem: false,
 
     init: function(config) {
         if(!config) return;
@@ -212,10 +213,18 @@ var bot = {
     fetch_latest_positions: function() {
         var ctx = this;
 
-        req("http://spacenear.us/tracker/datanew.php?mode=latest&type=positions&format=json&max_positions=0&position_id="+ctx.storage.tracker.latest_pos_id,
-            function(error, response, body) {
-
+        req({
+            url:"http://spacenear.us/tracker/datanew.php?mode=latest&type=positions&format=json&max_positions=0&position_id="+ctx.storage.tracker.latest_pos_id,
+            timeout: 15000,
+        },
+        function(error, response, body) {
             if (!error && response.statusCode == 200) {
+                if(ctx.snus_conn_problem === true) {
+                    ctx.snus_conn_problem = false;
+
+                    ctx.notify(["Notice:",[ctx.color.SBJ, "spacenear.us"],"is back"], false, false, true);
+                }
+
                 ctx.storage.tracker.timestamp = (new Date()).getTime();
                 var data = JSON.parse(body).positions.position;
 
@@ -257,6 +266,11 @@ var bot = {
             }
             else {
                 console.log(error);
+                if(ctx.snus_conn_problem === false) {
+                    ctx.snus_conn_problem = true;
+
+                    ctx.notify(["Warning: unable to reach",[ctx.color.SBJ, "spacenear.us"],"(will keep retring)"], false, false, true);
+                }
             }
 
             setTimeout(function() { ctx.fetch_latest_positions(); }, 5000);
@@ -290,11 +304,13 @@ var bot = {
 
     // notify
 
-    notify: function(msg, all, action) {
+    notify: function(msg, all, action, admins) {
         action = (action === undefined || typeof action != "boolean") ? false : action;
         all = (all === undefined || typeof all != "boolean") ? false : all;
+        admins = (admins === undefined || typeof admins != "boolean") ? false : admins;
 
         var list = (all) ? this.config.channels : this.config.channels_notify;
+        list = (admins) ? this.config.channel_admins : list;
 
         for(var k in list) {
             this.respond(list[k], null, msg, action);
