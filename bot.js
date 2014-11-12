@@ -670,6 +670,7 @@ var bot = {
                         if(!error && response.statusCode == 200 && body.status == "ok") {
                             if(body.result === null) {
                                 ctx.respond(opts.channel, opts.from, "Cannot locate the callsign.");
+                                return;
                             }
 
                             switch(mode) {
