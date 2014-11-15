@@ -627,7 +627,7 @@ var bot = {
                     return;
                 }
 
-                callsign = args[1];
+                callsign = args[1].toUpperCase();
                 display_callsign = (args.length > 2) ? args[2] : "";
 
                 body = { callsign: callsign, display_callsign: display_callsign };
