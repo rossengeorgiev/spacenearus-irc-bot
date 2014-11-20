@@ -926,6 +926,7 @@ var bot = {
         }
 
         name = name.toLowerCase();
+        if(name === "") return;
 
         // if no subcmd match, assume it's a callsign and look for hysplit
         if(name in this.storage.hysplit.match) {
