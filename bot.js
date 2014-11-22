@@ -689,11 +689,13 @@ var bot = {
                                 return;
                             }
 
+                            body = body.result;
+
                             switch(mode) {
                                 case "info":
-                                    var lat = body.result[0];
-                                    var lng = body.result[1];
-                                    var timestamp = body.result[4] * 1000;
+                                    var lat = body.info.latitude;
+                                    var lng = body.info.longitude;
+                                    var timestamp = body.info.server_timestamp * 1000;
                                     var dt_minutes = moment().diff(moment(timestamp), 'minutes');
 
                                     ctx.resolve_location(lat,lng, function(name) {
@@ -705,6 +707,8 @@ var bot = {
                                         else {
                                             msg.push([ctx.color.SBJ, ctx.format_number(lat,5)+','+ctx.format_number(lng,5)]);
                                         }
+
+                                        if('altitude' in body.info) msg.push("at", [ctx.color.SBJ, ctx.format_number(body.info.altitude,0) + " meters"]);
 
                                         if(dt_minutes >= 5) msg.push("about", [ctx.color.SBJ, moment(timestamp).fromNow()]);
 
@@ -718,7 +722,7 @@ var bot = {
                                         "Last contact with",
                                         [ctx.color.SBJ, callsign],
                                         "was",
-                                        [ctx.color.SBJ, moment(body.result[4]*1000).fromNow()]
+                                        [ctx.color.SBJ, moment(body.info.server_timestamp*1000).fromNow()]
                                         ]);
                                     break;
                             }
