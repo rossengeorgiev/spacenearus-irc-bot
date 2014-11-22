@@ -856,10 +856,10 @@ var bot = {
                     return;
                 }
 
-                name = (args.length > 1) ? encodeURIComponent(args[1]) : "cannot-be-empty";
+                name = (args.length > 1) ? args[1] : "cannot-be-empty";
 
                 this._exec_admin_command(opts.from, function() {
-                    req("http://spacenear.us/tracker/single_hysplit.php?key="+ctx.config.hysplit_key+"&action="+args[0]+"&vehicle="+name+"&_"+(new Date()).getTime(), function(error, response, body) {
+                    req("http://spacenear.us/tracker/single_hysplit.php?key="+ctx.config.hysplit_key+"&action="+args[0]+"&vehicle="+encodeURIComponent(name)+"&_"+(new Date()).getTime(), function(error, response, body) {
                         if(!error && response.statusCode == 200 && body == "ok") {
                             switch(args[0]) {
                                 case "run":
