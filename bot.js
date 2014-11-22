@@ -913,7 +913,7 @@ var bot = {
                             [this.color.SBJ, callsigns.join(', ')]
                             ]);
                 }
-                break;
+                return;
             case "kml":
             case "kmz":
                 show_gif = false;
