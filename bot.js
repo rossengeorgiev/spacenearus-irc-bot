@@ -672,58 +672,159 @@ var bot = {
                 });
 
                 return;
+            case "find":
             case "info":
+            case "telemetry":
             case "ping":
                 if(args.length == 1 || args[1] === "") {
-                    ctx.respond(opts.channel, opts.from, "You need to specify a valid APRS callsing");
+                    ctx.respond(opts.channel, opts.from, "You need to specify a callsign or pattern");
                     return;
                 }
 
                 var mode = args[0];
-                var callsign = args[1].toUpperCase();
+                var pattern = args[1].toUpperCase();
 
-                req({url:"http://127.0.0.1:9993/aprs/info/"+callsign, json: true, timeout: 2000}, function(error, response, body) {
+                req({url:"http://127.0.0.1:9993/aprs/info/"+pattern, json: true, timeout: 2000}, function(error, response, body) {
                         if(!error && response.statusCode == 200 && body.status == "ok") {
-                            if(body.result === null) {
-                                ctx.respond(opts.channel, opts.from, "Cannot locate the callsign.");
+                            if(body.rows === 0) {
+                                ctx.respond(opts.channel, opts.from, "No matches found");
                                 return;
+                            } else {
+                                var toomany = false;
+
+                                if(['telemetry','find'].indexOf(mode) > -1 && body.rows > 3) toomany = true;
+                                else if(mode == "info" && body.rows > 1) toomany = true;
+                                else if(mode == "ping" && body.rows > 15) toomany = true;
+
+                                if( toomany ) {
+                                    var url = "http://aprs.fi/";
+
+                                    if(['telemetry','info'].indexOf(mode) > -1) url += mode + "/";
+
+                                    ctx.respond(opts.channel, opts.from, ["Found", [ctx.color.SBJ, body.rows], "results. So many -", [ctx.color.URL, url+pattern]]);
+                                    return;
+                                }
                             }
 
-                            body = body.result;
+                            var msg = [];
 
                             switch(mode) {
                                 case "info":
-                                    var lat = body.info.latitude;
-                                    var lng = body.info.longitude;
-                                    var timestamp = body.info.server_timestamp * 1000;
-                                    var dt_minutes = moment().diff(moment(timestamp), 'minutes');
-
-                                    ctx.resolve_location(lat,lng, function(name) {
-                                        var msg = [[ctx.color.SBJ, callsign], (dt_minutes<5)?"is":"was", "near"];
-
-                                        if(name) {
-                                            msg.push([ctx.color.SBJ, name], [ctx.color.EXT, '('+ctx.format_number(lat,5)+','+ctx.format_number(lng,5)+')']);
-                                        }
-                                        else {
-                                            msg.push([ctx.color.SBJ, ctx.format_number(lat,5)+','+ctx.format_number(lng,5)]);
+                                case "find":
+                                case "telemetry":
+                                    body.result.forEach( function(row) {
+                                        if( !row.hasOwnProperty('info') ) {
+                                            if(mode == "info") ctx.respond(opts.channel, opts.from, "No matches found");
+                                            return;
                                         }
 
-                                        if('altitude' in body.info) msg.push("at", [ctx.color.SBJ, ctx.format_number(body.info.altitude,0) + " meters"]);
+                                        var msg_t = [];
+                                        var msg_info = [];
 
-                                        if(dt_minutes >= 5) msg.push("about", [ctx.color.SBJ, moment(timestamp).fromNow()]);
+                                        // generate telemetry message line
+                                        if(['info','telemetry'].indexOf(mode) > -1 &&
+                                            'telemetry' in row.info &&
+                                            'tPARM' in row &&
+                                            'tEQNS' in row
+                                          )  {
 
-                                        msg.push("-", [ctx.color.URL, "http://aprs.fi/"+callsign]);
+                                            row.info.telemetry.vals.forEach(function(val, index) {
+                                                // skip noname paramters
+                                                if(row.tPARM[index] === "") return;
 
-                                        ctx.respond(opts.channel, opts.from, msg);
+                                                val = row.tEQNS[index][0] * Math.pow(val, 2) + val * row.tEQNS[index][1] + row.tEQNS[index][2];
+                                                val = Math.round(val * 10000) / 10000;
+
+                                                msg_t.push( [ctx.color.SBJ, row.tPARM[index]] );
+
+                                                if('tUNIT' in row && row.tUNIT[index] !== "") {
+                                                    val = val + " " + row.tUNIT[index];
+                                                }
+
+                                                msg_t.push( [ctx.color.EXT, val] );
+                                            });
+
+                                        }
+
+                                        // if it's only the telemetry subcommand, send message and stop here
+                                        if(mode == "telemetry") {
+                                            if(msg_t.length === 0) msg_t.push('none');
+
+                                            msg_t.splice(0,0, [ctx.color.SBJ, row.info.from], 'telemetry:');
+
+                                            ctx.respond(opts.channel, opts.from, msg_t);
+                                            return;
+
+                                        } else {
+                                            if(msg_t.length) msg_t.splice(0,0, 'Telemetry:');
+                                        }
+
+                                        var lat = row.info.latitude;
+                                        var lng = row.info.longitude;
+                                        var timestamp = row.info.server_timestamp * 1000;
+                                        var dt_minutes = moment().diff(moment(timestamp), 'minutes');
+
+                                        ctx.resolve_location(lat,lng, function(name) {
+                                            var msg = [[ctx.color.SBJ, row.info.from], (dt_minutes<5)?"is":"was", "near"];
+
+                                            if(name) {
+                                                msg.push([ctx.color.SBJ, name], [ctx.color.EXT, '('+ctx.format_number(lat,5)+','+ctx.format_number(lng,5)+')']);
+                                            }
+                                            else {
+                                                msg.push([ctx.color.SBJ, ctx.format_number(lat,5)+','+ctx.format_number(lng,5)]);
+                                            }
+
+                                            if('altitude' in row.info) msg.push("at", [ctx.color.SBJ, ctx.format_number(row.info.altitude,0) + " meters"]);
+
+                                            if(dt_minutes >= 5) msg.push("about", [ctx.color.SBJ, moment(timestamp).fromNow()]);
+
+                                            var url = "http://aprs.fi/";
+                                            if(mode == "info") url += mode + "/";
+
+                                            msg.push("-", [ctx.color.URL, url+row.info.from]);
+
+                                            ctx.respond(opts.channel, opts.from, msg);
+
+                                            // in info mode we provide detailed info about the callsign
+                                            if(mode == "info") {
+                                                msg = ["Path:", [ctx.color.SBJ, row.info.from + ">" + row.info.to], "via", [ctx.color.SBJ, row.info.path.join(',')]];
+                                                ctx.respond(opts.channel, opts.from, msg);
+
+                                                msg = ["Symbol:", [ctx.color.SBJ, ""+ row.info.symbol + row.info.symbol_table]];
+
+                                                if('speed' in row.info) msg.push("Speed:", [ctx.color.SBJ, Math.round(row.info.speed) +"kmph"]);
+                                                if('course' in row.info) msg.push("Course:", [ctx.color.SBJ, row.info.course + '°']);
+                                                if('bearing' in row.info) msg.push("Bearing:", [ctx.color.SBJ, row.info.bearing + '°']);
+                                                if('nrq' in row.info) msg.push("NRQ:", [ctx.color.SBJ, row.info.nrq]);
+                                                if('radiorange' in row.info) msg.push("Radio range:", [ctx.color.SBJ, Math.round(row.info.radiorange) + "km"]);
+                                                if('mtype' in row.info) msg.push("MicE message:", [ctx.color.SBJ, row.info.mtype]);
+
+                                                ctx.respond(opts.channel, opts.from, msg);
+
+                                                if('comment' in row.info) {
+                                                    ctx.respond(opts.channel, opts.from, ["Comment:", [ctx.color.SBJ, row.info.comment]]);
+                                                }
+
+                                                if('status' in row) {
+                                                    ctx.respond(opts.channel, opts.from, ["Status:", [ctx.color.SBJ, row.info.status]]);
+                                                }
+
+                                                // send telemetry message if there is one
+                                                if(msg_t.length) ctx.respond(opts.channel, opts.from, msg_t);
+                                            }
+                                        });
                                     });
                                     break;
                                 case "ping":
-                                    ctx.respond(opts.channel, opts.from, [
-                                        "Last contact with",
-                                        [ctx.color.SBJ, callsign],
-                                        "was",
-                                        [ctx.color.SBJ, moment(body.info.server_timestamp*1000).fromNow()]
-                                        ]);
+                                    msg = ["Latest contact:"];
+
+                                    body.result.forEach(function(row,index) {
+                                        if( !row.hasOwnProperty('info') ) return;
+
+                                        msg.push( [ctx.color.SBJ, row.info.from] );
+                                        msg.push( [ctx.color.EXT, "(" + moment(row.info.server_timestamp*1000).fromNow() +")" + (index+1 < body.rows ? ',':'')] );
+                                    });
+                                    ctx.respond(opts.channel, opts.from, msg);
                                     break;
                             }
                         } else {
@@ -788,7 +889,8 @@ var bot = {
                 });
                 break;
             case "list-bal":
-                req({url:"http://127.0.0.1:9993/aprs/allballoons", json: true, timeout: 2000}, function(error, response, body) {
+                var interval = (args.length > 1) ? args[1] : "";
+                req({url:"http://127.0.0.1:9993/aprs/allballoons/"+interval, json: true, timeout: 2000}, function(error, response, body) {
                         if(!error && response.statusCode == 200 && body.status == "ok") {
                             if(body.result.length === 0) {
                                 ctx.respond(opts.channel, opts.from, "Recent balloons: none");
