@@ -248,12 +248,12 @@ var bot = {
                                 "-",
                                 [ctx.color.URL, ctx.url_hmt_vehicle_focus + encodeURIComponent(obj[name].vehicle)]
                             ]);
-                        } else if(ctx.storage.tracker.data[name].gps_time.getTime() + 21600000 < obj[name].gps_time.getTime())  {
+                        } else if(ctx.storage.tracker.data[name].server_time.getTime() + 21600000 < obj[name].server_time.getTime())  {
                             ctx.notify([
                                 "New position from",
                                 [ctx.color.SBJ, obj[name].vehicle],
                                 "after",
-                                [ctx.color.SBJ, moment(ctx.storage.tracker.data[name].gps_time).fromNow(true)],
+                                [ctx.color.SBJ, moment(ctx.storage.tracker.data[name].server_time).fromNow(true)],
                                 "silence",
                                 "-",
                                 [ctx.color.URL, ctx.url_hmt_vehicle_focus + encodeURIComponent(obj[name].vehicle)]
