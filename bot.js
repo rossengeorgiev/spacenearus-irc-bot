@@ -818,11 +818,16 @@ var bot = {
                                 case "ping":
                                     msg = ["Latest contact:"];
 
+                                    // filter objects without info
+                                    body.result = body.result.filter(function(row) { return row.hasOwnProperty('info'); });
+
+                                    var len = body.result.length;
+
                                     body.result.forEach(function(row,index) {
                                         if( !row.hasOwnProperty('info') ) return;
 
                                         msg.push( [ctx.color.SBJ, row.info.from] );
-                                        msg.push( [ctx.color.EXT, "(" + moment(row.info.server_timestamp*1000).fromNow() +")" + (index+1 < body.rows ? ',':'')] );
+                                        msg.push( [ctx.color.EXT, "(" + moment(row.info.server_timestamp*1000).fromNow() +")" + (index+1 < len ? ',':'')] );
                                     });
                                     ctx.respond(opts.channel, opts.from, msg);
                                     break;
