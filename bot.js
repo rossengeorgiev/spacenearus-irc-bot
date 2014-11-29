@@ -723,10 +723,17 @@ var bot = {
 
                                         // generate telemetry message line
                                         if(['info','telemetry'].indexOf(mode) > -1 &&
-                                            'telemetry' in row.info &&
-                                            'tPARM' in row &&
-                                            'tEQNS' in row
+                                            'telemetry' in row.info
                                           )  {
+                                            // if telemetry is not setup use default values
+                                            // channel names from Ch1 to Ch5
+                                            if( !row.hasOwnProperty('tPARM') ) {
+                                                row.tPARM = Array.apply(0,Array(5)).map(function(v,i) { return "Ch" + (i+1); });
+                                            }
+                                            // equations as [0,1,0]
+                                            if( !row.hasOwnProperty('tEQNS') ) {
+                                                row.tEQNS = Array.apply(0,Array(5)).map(function() { return [0,1,0]; });
+                                            }
 
                                             row.info.telemetry.vals.forEach(function(val, index) {
                                                 // skip noname paramters
