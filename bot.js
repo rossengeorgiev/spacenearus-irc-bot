@@ -813,7 +813,7 @@ var bot = {
                                                 }
 
                                                 if('status' in row) {
-                                                    ctx.respond(opts.channel, opts.from, ["Status:", [ctx.color.SBJ, row.info.status]]);
+                                                    ctx.respond(opts.channel, opts.from, ["Status:", [ctx.color.SBJ, row.status]]);
                                                 }
 
                                                 // send telemetry message if there is one
