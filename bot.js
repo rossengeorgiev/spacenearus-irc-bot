@@ -901,13 +901,18 @@ var bot = {
                 });
                 break;
             case "list-bal":
+            case "list-bal-url":
                 var interval = (args.length > 1) ? args[1] : "";
                 req({url:"http://127.0.0.1:9993/aprs/allballoons/"+interval, json: true, timeout: 2000}, function(error, response, body) {
                         if(!error && response.statusCode == 200 && body.status == "ok") {
                             if(body.result.length === 0) {
                                 ctx.respond(opts.channel, opts.from, "Recent balloons: none");
                             } else {
-                                ctx.respond(opts.channel, opts.from, "Recent balloons: "+body.result.join(", "));
+                                if(args[0] == "list-bal") {
+                                    ctx.respond(opts.channel, opts.from, "Recent balloons: "+body.result.join(", "));
+                                } else {
+                                    ctx.respond(opts.channel, opts.from, "Recent balloons: http://aprs.fi/"+body.result.join(","));
+                                }
                             }
                         } else {
                             if(response === undefined) {
