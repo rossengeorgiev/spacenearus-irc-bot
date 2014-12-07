@@ -908,10 +908,13 @@ var bot = {
                             if(body.result.length === 0) {
                                 ctx.respond(opts.channel, opts.from, "Recent balloons: none");
                             } else {
-                                if(args[0] == "list-bal") {
-                                    ctx.respond(opts.channel, opts.from, "Recent balloons: "+body.result.join(", "));
-                                } else {
-                                    ctx.respond(opts.channel, opts.from, "Recent balloons: http://aprs.fi/"+body.result.join(","));
+                                // aprs.fi can only search for 20 callsigns at a time
+                                for(var i = 0, ii = body.result.length; i < ii; i += 20 ) {
+                                    if(args[0] == "list-bal") {
+                                        ctx.respond(opts.channel, opts.from, "Recent balloons: "+body.result.slice(i,i+20).join(", "));
+                                    } else {
+                                        ctx.respond(opts.channel, opts.from, "Recent balloons: http://aprs.fi/"+body.result.slice(i,i+20).join(","));
+                                    }
                                 }
                             }
                         } else {
