@@ -454,7 +454,7 @@ var bot = {
         switch(doc.type) {
             case "payload_telemetry":
                 var raw = new Buffer(doc.data._raw, 'base64').toString("ascii").trim();
-                this.respond(channel,"", ["Payload telemetry", [this.color.SBJ, doc._id],[this.color.EXT,(doc.data._parsed)?"(parsed)":"(not prased)"],"raw:", [this.color.SBJ, raw]]);
+                this.respond(channel,"", ["Payload telemetry", [this.color.SBJ, doc._id],[this.color.EXT,(doc.data._parsed)?"(parsed)":"(not parsed)"],"raw:", [this.color.SBJ, raw]]);
                 break;
             case "flight":
                 var lat = this.format_number(doc.launch.location.latitude, 5);
