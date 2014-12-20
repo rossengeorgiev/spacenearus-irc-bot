@@ -8,8 +8,8 @@ moment.locale("en-gb");
 var bot = {
     url_geocode: "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&result_type=sublocality|administrative_area_level_2|administrative_area_level_1|country&result_type=sublocality&key={APIKEY}&latlng=",
     url_geocode_ocean: "http://api.geonames.org/oceanJSON?lat={LAT}&lng={LNG}&username={USER}",
-    url_hmt_vehicle: "http://habhub.org/mt/?filter=",
-    url_hmt_vehicle_focus: "http://habhub.org/mt/?focus=",
+    url_hmt_vehicle: "http://habhub.org/t/?filter=",
+    url_hmt_vehicle_focus: "http://habhub.org/t/?focus=",
     storage: {
         hysplit: {
             timestamp: 0,
@@ -79,7 +79,7 @@ var bot = {
 
                     case "tracker": ctx.respond(to, from, [
                                             "Here you go -",
-                                            [ctx.color.URL, "http://habhub.org/mt/"]
+                                            [ctx.color.URL, "http://habhub.org/t/"]
                                         ]); break;
 
 
