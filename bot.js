@@ -225,7 +225,20 @@ var bot = {
                 }
 
                 ctx.storage.tracker.timestamp = (new Date()).getTime();
-                var data = JSON.parse(body).positions.position;
+
+                var data;
+                try {
+                    data = JSON.parse(body).positions.position;
+                }
+                catch(err) {
+                    console.log("Invalid reply from server:", err);
+                    console.log("---------- reply -------------")
+                    console.log(body);
+                    console.log("------------------------------")
+                    return;
+                }
+
+                if(data === undefined || data.length === 0) return;
 
                 var obj = {};
                 var lowest_pos_id = null;
