@@ -809,7 +809,7 @@ var bot = {
                                                 msg = ["Path:", [ctx.color.SBJ, row.info.from + ">" + row.info.to], "via", [ctx.color.SBJ, row.info.path.join(',')]];
                                                 ctx.respond(opts.channel, opts.from, msg);
 
-                                                msg = ["Symbol:", [ctx.color.SBJ, ""+ row.info.symbol + row.info.symbol_table]];
+                                                msg = ["Symbol:", [ctx.color.SBJ, "" + row.info.symbol_table + row.info.symbol]];
 
                                                 if('speed' in row.info) msg.push("Speed:", [ctx.color.SBJ, Math.round(row.info.speed) +"kmph"]);
                                                 if('course' in row.info) msg.push("Course:", [ctx.color.SBJ, row.info.course + '°']);
