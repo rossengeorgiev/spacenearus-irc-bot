@@ -608,6 +608,43 @@ var bot = {
                     }
                 }
 
+                // payload status
+                req("http://habitat.habhub.org/habitat/_design/payload_telemetry/_view/payload_time?limit=1&startkey=[%22"+doc._id+"%22,{}]&descending=true&include_docs=true", function(error, response, body) {
+                    if(!error && response.statusCode == 200) {
+                        try {
+                            var json = JSON.parse(body);
+                            var msg = ["Last parsed status:"];
+
+                            // test if we got the a valid result
+                            if(json.rows === undefined ||
+                               json.rows.length === 0 ||
+                               json.rows[0].key[0] != doc._id) {
+
+                                msg.push("never");
+                            }
+                            else {
+                                json = json.rows[0];
+
+                                var docStatus = moment(json.key[1]*1000).fromNow();
+
+                                // if the payload_telemtry is not parsed, report error
+                                if(json.doc.data === undefined) docStatus = "error";
+                                // if _fix_invalid flag is true
+                                else if(json.doc.data.hasOwnProperty("_fix_invalid") && json.doc.data._fix_invalid === true) {
+                                    docStatus += ", nofix";
+                                }
+
+                                msg.push([ctx.color.EXT, "("+docStatus+")"]);
+                            }
+                            ctx.respond(channel,"", msg);
+
+                        } catch (e) {
+                            console.error(e);
+                        }
+
+                    }
+                });
+
 
                 break;
             default:
