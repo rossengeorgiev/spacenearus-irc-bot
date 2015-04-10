@@ -613,14 +613,14 @@ var bot = {
                     if(!error && response.statusCode == 200) {
                         try {
                             var json = JSON.parse(body);
-                            var msg = ["Last parsed status:"];
+                            var msg = ["Last parsed:"];
 
                             // test if we got the a valid result
                             if(json.rows === undefined ||
                                json.rows.length === 0 ||
                                json.rows[0].key[0] != doc._id) {
 
-                                msg.push("never");
+                                msg.push([ctx.color.SBJ, "never"]);
                             }
                             else {
                                 json = json.rows[0];
@@ -634,7 +634,7 @@ var bot = {
                                     docStatus += ", nofix";
                                 }
 
-                                msg.push([ctx.color.EXT, "("+docStatus+")"]);
+                                msg.push([ctx.color.SBJ, docStatus]);
                             }
                             ctx.respond(channel,"", msg);
 
