@@ -232,9 +232,9 @@ var bot = {
                 }
                 catch(err) {
                     console.log("Invalid reply from server:", err);
-                    console.log("---------- reply -------------")
+                    console.log("---------- reply -------------");
                     console.log(body);
-                    console.log("------------------------------")
+                    console.log("------------------------------");
                     return;
                 }
 
