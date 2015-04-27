@@ -501,7 +501,7 @@ var bot = {
 
                 this.respond(channel,"", msg);
 
-                if(addurl) this.respond(channel, "", ["Raw:", [this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]]);
+                if(addurl) this.respond(channel, "", ["Raw:", [this.color.URL,"http://habitat.habhub.org/monocle/?uri=habitat/"+doc._id]]);
 
                 if(!doc.approved && doc.payloads.length) {
                     var nPayloads = doc.payloads.length;
@@ -578,7 +578,7 @@ var bot = {
                 var k;
                 msg = ["Payload config",[this.color.SBJ, doc.name], [this.color.EXT, "("+short_id+")"]];
 
-                if(addurl) msg.push("-", [this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]);
+                if(addurl) msg.push("-", [this.color.URL,"http://habitat.habhub.org/monocle/?uri=habitat/"+doc._id]);
 
                 this.respond(channel,"", msg);
 
@@ -649,9 +649,9 @@ var bot = {
                 break;
             default:
                 if('type' in doc) {
-                    this.respond(channel,"", ["Doc", [this.color.SBJ,doc._id], "is of type", [this.color.SBJ, doc.type], "-", [this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]]);
+                    this.respond(channel,"", ["Doc", [this.color.SBJ,doc._id], "is of type", [this.color.SBJ, doc.type], "-", [this.color.URL,"http://habitat.habhub.org/monocle/?uri=habitat/"+doc._id]]);
                 } else {
-                    this.respond(channel,"", ["Doc", [this.color.SBJ,doc._id], "is of unknown type -", [this.color.URL,"http://habitat.habhub.org/habitat/"+doc._id]]);
+                    this.respond(channel,"", ["Doc", [this.color.SBJ,doc._id], "is of unknown type -", [this.color.URL,"http://habitat.habhub.org/monocle/?uri=habitat/"+doc._id]]);
                 }
         }
     },
