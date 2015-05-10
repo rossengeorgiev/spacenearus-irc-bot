@@ -467,6 +467,8 @@ var bot = {
             case "payload_telemetry":
                 var raw = new Buffer(doc.data._raw, 'base64').toString("ascii").trim();
                 this.respond(channel,"", ["Payload telemetry", [this.color.SBJ, doc._id],[this.color.EXT,(doc.data._parsed)?"(parsed)":"(not parsed)"],"raw:", [this.color.SBJ, raw]]);
+
+                if(addurl) this.respond(channel, "", ["Raw:", [this.color.URL,"http://habitat.habhub.org/monocle/?uri=habitat/"+doc._id]]);
                 break;
             case "flight":
                 var lat = this.format_number(doc.launch.location.latitude, 5);
