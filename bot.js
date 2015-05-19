@@ -1181,6 +1181,11 @@ var bot = {
     handle_wiki: function(opts) {
         var ctx = this;
 
+        if(opts.args.trim() === "") {
+            ctx.respond(opts.channel, opts.from, ["Here be the wiki, arr:", [ctx.color.URL, "http://ukhas.org.uk"]]);
+            return;
+        }
+
         req("http://ukhas.org.uk/start?do=search&id="+encodeURIComponent(opts.args), function(error, response, body) {
             if (!error && response.statusCode == 200) {
                 var match = body.match(/search_quickhits.*ul/g);
