@@ -1300,14 +1300,20 @@ var bot = {
                 if(data.rows.length) {
                     var msg = ["Current flights:"];
 
-
+                    count = 0;
                     for(var k in data.rows) {
                         var id = data.rows[k].id.substr(-4);
                         var doc = data.rows[k].doc;
 
                         if(doc.type == "flight" && ctx.ts(doc.start) < (new Date()).getTime()) {
                             msg.push([ctx.color.SBJ, doc.name],[ctx.color.EXT, "("+id+"),"]);
+                            count += 1;
                         }
+                    }
+
+                    if(count === 0) {
+                        ctx.respond(opts.channel, opts.from, "There are no flights currently :(");
+                        return;
                     }
 
                     // remove extra comma
