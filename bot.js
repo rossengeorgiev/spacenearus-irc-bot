@@ -245,6 +245,10 @@ var bot = {
                 }
 
                 if(data === undefined || data.length === 0) {
+                    console.log("Invalid reply from server:", err);
+                    console.log("---------- reply -------------");
+                    console.log(body);
+                    console.log("------------------------------");
                     ctx.fetch_next();
                     return;
                 }
