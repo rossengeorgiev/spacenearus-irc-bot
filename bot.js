@@ -294,7 +294,7 @@ var bot = {
                 if(ctx.snus_conn_problem === false) {
                     ctx.snus_conn_problem = true;
 
-                    ctx.notify(["Warning: unable to reach",[ctx.color.SBJ, "spacenear.us"],"(will keep retring)"], false, false, true);
+                    ctx.notify(["Warning: unable to reach",[ctx.color.SBJ, "spacenear.us"],"(will keep retrying)"], false, false, true);
                 }
             }
 
