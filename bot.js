@@ -209,6 +209,11 @@ var bot = {
         });
     },
 
+    fetch_next: function() {
+        var ctx = this;
+        setTimeout(function() { ctx.fetch_latest_positions(); }, 5000);
+    },
+
     fetch_latest_positions: function() {
         var ctx = this;
 
@@ -235,10 +240,14 @@ var bot = {
                     console.log("---------- reply -------------");
                     console.log(body);
                     console.log("------------------------------");
+                    ctx.fetch_next();
                     return;
                 }
 
-                if(data === undefined || data.length === 0) return;
+                if(data === undefined || data.length === 0) {
+                    ctx.fetch_next();
+                    return;
+                }
 
                 var obj = {};
                 var lowest_pos_id = null;
@@ -285,7 +294,7 @@ var bot = {
                 }
             }
 
-            setTimeout(function() { ctx.fetch_latest_positions(); }, 5000);
+            ctx.fetch_next();
         });
     },
 
