@@ -245,7 +245,7 @@ var bot = {
                 }
 
                 if(data === undefined || data.length === 0) {
-                    console.log("Invalid reply from server:", err);
+                    console.log("Empty reply from server");
                     console.log("---------- reply -------------");
                     console.log(body);
                     console.log("------------------------------");
