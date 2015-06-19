@@ -31,7 +31,7 @@ var bot = {
         URL:'light_blue'
     },
 
-    regex_cmd: /^\!([a-zA-Z]+) ?(.*)?$/,
+    regex_cmd: /^[\!\.]([a-zA-Z]+) ?(.*)?$/,
     regex_docid: /([a-f0-9]{64}|[a-f0-9]{32})/gi,
 
     client: null,
