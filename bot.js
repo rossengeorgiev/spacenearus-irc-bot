@@ -1247,7 +1247,22 @@ var bot = {
     },
 
     handle_monocle: function(opts) {
-        var url = this.url_hmt_monocle + opts.args;
+		var url = this.url_hmt_monocle;
+
+		if(opts.args !== "") {
+			 url += opts.args;
+		}
+		else if(this.storage.doclookup &&
+				this.storage.doclookup.doc &&
+				this.storage.doclookup.doc.type
+		) {
+			url += this.storage.doclookup.doc._id;
+		}
+		else {
+			this.respond(opts.channel, opts.from, ["Are you certain you know what you are doing?"]);
+			return;
+		}
+
         this.respond(opts.channel, opts.from, ["Here you go -", [this.color.URL, url]]);
     },
 
