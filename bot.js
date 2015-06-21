@@ -9,7 +9,7 @@ var bot = {
     url_geocode: "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&result_type=sublocality|administrative_area_level_2|administrative_area_level_1|country&result_type=sublocality&key={APIKEY}&latlng=",
     url_geocode_ocean: "http://api.geonames.org/oceanJSON?lat={LAT}&lng={LNG}&username={USER}",
     url_hmt_vehicle: "http://tracker.habhub.org/#!qm=All&q=",
-    url_hmt_monocle: "http://habitat.habhub.org/monocle/?uri=habitat/",
+    url_hmt_monocle: "http://habitat.habhub.org/monocle/?uri=",
     storage: {
         hysplit: {
             timestamp: 0,
@@ -1250,7 +1250,13 @@ var bot = {
 		var url = this.url_hmt_monocle;
 
 		if(opts.args !== "") {
-			 url += opts.args;
+
+			if(opts.args.match(this.regex_docid)) {
+				url += "habitat/" + opts.args;
+			}
+			else {
+				url += encodeURIComponent(opts.args);
+			}
 		}
 		else if(this.storage.doclookup &&
 				this.storage.doclookup.doc &&
