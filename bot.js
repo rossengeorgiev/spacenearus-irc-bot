@@ -537,24 +537,26 @@ var bot = {
                                     var json = JSON.parse(body);
 
                                     // test if we got the a valid result
-                                    if(json.rows === undefined ||
-                                       json.rows.length === 0 ||
-                                       doc.payloads.indexOf(json.rows[0].key[0]) == -1) throw "No result";
+                                    if(json.rows !== undefined ||
+                                       json.rows.length !== 0 ||
+                                       doc.payloads.indexOf(json.rows[0].key[0]) !== -1
+									) {
+										json = json.rows[0];
+										found[json.key[0]] = 1;
+										nFound++;
 
-                                    json = json.rows[0];
-                                    found[json.key[0]] = 1;
-                                    nFound++;
+										var docStatus = json.doc._id.substr(-4);
+										docStatus += ", " + moment(json.key[1]*1000).fromNow();
 
-                                    var docStatus = moment(json.key[1]*1000).fromNow();
+										// if the payload_telemtry is not parsed, report error
+										if(json.doc.data === undefined) docStatus = "error";
+										// if _fix_invalid flag is true
+										else if(json.doc.data.hasOwnProperty("_fix_invalid") && json.doc.data._fix_invalid === true) {
+											docStatus += ", nofix";
+										}
 
-                                    // if the payload_telemtry is not parsed, report error
-                                    if(json.doc.data === undefined) docStatus = "error";
-                                    // if _fix_invalid flag is true
-                                    else if(json.doc.data.hasOwnProperty("_fix_invalid") && json.doc.data._fix_invalid === true) {
-                                        docStatus += ", nofix";
-                                    }
-
-                                    statuses.push([ctx.color.SBJ, json.doc.data.payload],[ctx.color.EXT, "("+docStatus+")"]);
+										statuses.push([ctx.color.SBJ, json.doc.data.payload],[ctx.color.EXT, "("+docStatus+")"]);
+									}
                                 } catch (e) {
                                     console.error(e);
                                 }
