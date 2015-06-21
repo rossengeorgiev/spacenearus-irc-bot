@@ -9,6 +9,7 @@ var bot = {
     url_geocode: "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&result_type=sublocality|administrative_area_level_2|administrative_area_level_1|country&result_type=sublocality&key={APIKEY}&latlng=",
     url_geocode_ocean: "http://api.geonames.org/oceanJSON?lat={LAT}&lng={LNG}&username={USER}",
     url_hmt_vehicle: "http://tracker.habhub.org/#!qm=All&q=",
+    url_hmt_monocle: "http://habitat.habhub.org/monocle/?uri=habitat/",
     storage: {
         hysplit: {
             timestamp: 0,
@@ -89,6 +90,7 @@ var bot = {
                     case "whereis":
                                  ctx.handle_whereis(opts); break;
 
+                    case "monocle": ctx.handle_monocle(opts); break;
                     case "id": ctx.handle_id(opts); break;
                     case "flights": ctx.handle_flights(opts); break;
                     case "flight": ctx.handle_flight(opts); break;
@@ -1240,6 +1242,11 @@ var bot = {
         }
 
         return false;
+    },
+
+    handle_monocle: function(opts) {
+        var url = this.url_hmt_monocle + opts.args;
+        this.respond(opts.channel, opts.from, ["Here you go -", [this.color.URL, url]]);
     },
 
     // habitat stuff
