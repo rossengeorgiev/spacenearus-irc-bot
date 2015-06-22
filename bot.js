@@ -1262,7 +1262,7 @@ var bot = {
 				this.storage.doclookup.doc &&
 				this.storage.doclookup.doc.type
 		) {
-			url += this.storage.doclookup.doc._id;
+			url += "habitat/" + this.storage.doclookup.doc._id;
 		}
 		else {
 			this.respond(opts.channel, opts.from, ["Are you certain you know what you are doing?"]);
