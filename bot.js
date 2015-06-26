@@ -182,7 +182,7 @@ var bot = {
         // exit gracefully on SIGINT|SIGTERM|SIGQUIT
         var quitHandler =  function() {
             console.log("Exiting...");
-            ctx.notify("is going for a nap.", true, true);
+            ctx.notify("is going for a nap.", false, true, true);
 
             setTimeout(function() {
                 process.exit();
@@ -204,7 +204,7 @@ var bot = {
         // fetch latest positions from the tracker
         this.fetch_latest_positions();
 
-        this.notify("is back!", true, true);
+        this.notify("is back!", false, true, true);
     },
 
     _exec_admin_command: function(name, success_callback, fail_callback) {
@@ -345,7 +345,7 @@ var bot = {
         admins = (admins === undefined || typeof admins != "boolean") ? false : admins;
 
         var list = (all) ? this.config.channels : this.config.channels_notify;
-        list = (admins) ? this.config.channel_admins : list;
+        list = (admins) ? [this.config.channel_admins] : list;
 
         for(var k in list) {
             this.respond(list[k], null, msg, action);
