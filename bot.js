@@ -122,6 +122,14 @@ var bot = {
                                         ctx.respond(opts.channel, opts.from, "Calm down! You need to be an admin to do that.");
                                     });
                                     break;
+                                case "cancel":
+                                    ctx._exec_admin_command(from, function() {
+                                           ctx.handle_cancel(opts);
+                                    },
+                                    function() {
+                                        ctx.respond(opts.channel, opts.from, "Calm down! You need to be an admin to do that.");
+                                    });
+                                    break;
 
                                 default: break;
                             }
@@ -435,7 +443,7 @@ var bot = {
         xref.doc.approved = true;
 
         var reqOpts = {
-            url: "http://"+this.config.habitat_creds+"@habitat.habhub.org/habitat/" + xref.doc._id,
+            url: "http://"+ctx.config.habitat_creds+"@habitat.habhub.org/habitat/" + xref.doc._id,
             method: "PUT",
             headers: {
                 'Content-Type':'application/json; charset=UTF-8',
@@ -457,6 +465,60 @@ var bot = {
                 } catch(e) {}
 
                 ctx.respond(opts.channel, opts.from, msg);
+            }
+        });
+    },
+
+    handle_cancel: function(opts) {
+        var ctx = this;
+        var match = opts.args.match(this.regex_docid);
+
+        // invalid doc id
+        if(!match) {
+                ctx.respond(opts.channel, opts.from, ["That's not a valid doc id"]);
+                return;
+        }
+
+        // handy doc cancel request
+        var cancel_doc = function(doc) {
+            doc.approved = false;
+
+            var reqOpts = {
+                url: "http://"+ctx.config.habitat_creds+"@habitat.habhub.org/habitat/" + doc._id,
+                method: "PUT",
+                headers: {
+                    'Content-Type':'application/json; charset=UTF-8',
+                },
+                body: JSON.stringify(doc)
+            };
+
+            req(reqOpts, function(error, response, body) {
+                if (!error && response.statusCode == 201) {
+                    ctx.respond(opts.channel, opts.from, ["Flight", [ctx.color.SBJ, doc.name], [ctx.color.EXT, "("+doc._id+")"], "is no longer approved."]);
+                } else {
+                    var msg = ["Got HTTP", [ctx.color.SBJ, response.statusCode]];
+
+                    try {
+                        var json = JSON.parse(body);
+
+                        if(json.error) msg.push([ctx.color.EXT, "("+json.error+")"]);
+                        if(json.reason) msg.push("-", [ctx.color.SBJ, json.reason]);
+                    } catch(e) {}
+
+                    ctx.respond(opts.channel, opts.from, msg);
+                }
+            });
+        };
+
+        req("http://habitat.habhub.org/habitat/" + match[0], function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                var doc = JSON.parse(body);
+                if(doc.type !== "flight") {
+                    ctx.respond(opts.channel, opts.from, ["That's not flight doc"]);
+                    return;
+                }
+
+                cancel_doc(doc);
             }
         });
     },
