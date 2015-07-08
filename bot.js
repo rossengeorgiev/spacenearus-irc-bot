@@ -32,7 +32,7 @@ var bot = {
         URL:'light_blue'
     },
 
-    regex_cmd: /^[\!\.]([a-zA-Z]+) ?(.*)?$/,
+    regex_cmd: /^[\!\.]([0-9a-zA-Z]+) ?(.*)?$/,
     regex_docid: /([a-f0-9]{64}|[a-f0-9]{32})/gi,
 
     client: null,
@@ -73,6 +73,7 @@ var bot = {
 
                 switch(cmd) {
                     // regular commands
+                    case "8ball": ctx.handle_8ball(opts); break;
                     case "aprs": ctx.handle_aprs(opts); break;
                     case "hysplit": ctx.handle_hysplit(opts); break;
                     case "track": ctx.handle_track(opts); break;
@@ -1255,6 +1256,37 @@ var bot = {
         else {
             this.respond(opts.channel, opts.from, "I haven't got a clue");
         }
+    },
+
+    handle_8ball: function(opts) {
+        var ctx = this;
+        var answers = [
+            // positive
+            "It is certain",
+            "It is decidedly so",
+            "Without a doubt",
+            "Yes definitely",
+            "You may rely on it",
+            "As I see it, yes",
+            "Most likely",
+            "Outlook good",
+            "Yes",
+            "Signs point to yes",
+            // neutral
+            "Reply hazy try again",
+            "Ask again later",
+            "Better not tell you now",
+            "Cannot predict now",
+            "Concentrate and ask again",
+            // negative
+            "Don't count on it",
+            "My reply is no",
+            "My sources say no",
+            "Outlook not so good",
+            "Very doubtful",
+        ];
+        var answer = answers[Math.round(Math.random()*answers.length)];
+        ctx.respond(opts.channel, opts.from, [answer]);
     },
 
     handle_wiki: function(opts) {
