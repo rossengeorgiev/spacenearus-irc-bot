@@ -1285,7 +1285,7 @@ var bot = {
             "Outlook not so good",
             "Very doubtful",
         ];
-        var answer = answers[Math.round(Math.random()*answers.length)];
+        var answer = answers[Math.round(Math.random() * (answers.length - 1))];
         ctx.respond(opts.channel, opts.from, [answer]);
     },
 
