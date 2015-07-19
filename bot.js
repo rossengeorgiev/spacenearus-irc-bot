@@ -1018,7 +1018,7 @@ var bot = {
                                 for(var callsign in body.result) {
                                     count += 1;
 
-                                    if(body.result[callsign].display_callsign !== null) {
+                                    if(body.result[callsign].display_callsign === null) {
                                         msg.push([ctx.color.SBJ, callsign + ((len==count)?'':',')]);
                                     } else {
                                         msg.push([ctx.color.SBJ, callsign],
