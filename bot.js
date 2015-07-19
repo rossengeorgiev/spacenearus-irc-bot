@@ -899,7 +899,7 @@ var bot = {
 
                                         var lat = row.info.latitude;
                                         var lng = row.info.longitude;
-                                        var timestamp = row.info.server_timestamp * 1000;
+                                        var timestamp = row.server_timestamp * 1000;
                                         var dt_minutes = moment().diff(moment(timestamp), 'minutes');
 
                                         ctx.resolve_location(lat,lng, function(name) {
@@ -965,7 +965,7 @@ var bot = {
                                         if( !row.hasOwnProperty('info') ) return;
 
                                         msg.push( [ctx.color.SBJ, row.info.from] );
-                                        msg.push( [ctx.color.EXT, "(" + moment(row.info.server_timestamp*1000).fromNow() +")" + (index+1 < len ? ',':'')] );
+                                        msg.push( [ctx.color.EXT, "(" + moment(row.server_timestamp*1000).fromNow() +")" + (index+1 < len ? ',':'')] );
                                     });
                                     ctx.respond(opts.channel, opts.from, msg);
                                     break;
