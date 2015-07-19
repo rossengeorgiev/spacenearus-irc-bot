@@ -979,8 +979,7 @@ var bot = {
                         }
                 });
                 break;
-            case "autotrack":
-            case "autobeta":
+            case "toggle-deprecated":
                 var val = (args.length > 1) ? args[1] : "";
                 var url_arg = (args[0] == "autotrack") ? "auto" : "beta_auto";
 
@@ -1019,7 +1018,7 @@ var bot = {
                                 for(var callsign in body.result) {
                                     count += 1;
 
-                                    if(body.result[callsign].display_callsign === "") {
+                                    if(body.result[callsign].display_callsign !== null) {
                                         msg.push([ctx.color.SBJ, callsign + ((len==count)?'':',')]);
                                     } else {
                                         msg.push([ctx.color.SBJ, callsign],
