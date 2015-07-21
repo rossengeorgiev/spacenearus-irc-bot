@@ -759,7 +759,7 @@ var bot = {
                 }
 
                 callsign = args[1].toUpperCase();
-                display_callsign = (args.length > 2) ? args[2] : "";
+                display_callsign = (args.length > 2) ? args[2] : null;
 
                 body = { callsign: callsign, display_callsign: display_callsign };
 
@@ -777,14 +777,14 @@ var bot = {
                                 case "add":
                                         msg.push("Added", [ctx.color.SBJ, callsign]);
 
-                                        if(display_callsign !== "") msg.push("as",[ctx.color.EXT, "("+display_callsign+")"]);
+                                        if(display_callsign !== null) msg.push("as",[ctx.color.EXT, "("+display_callsign+")"]);
 
                                         msg.push("to APRS Importer");
                                     break;
                                 case "remove":
                                         msg.push("Removed", [ctx.color.SBJ, callsign]);
 
-                                        if(display_callsign !== "") msg.push("as",[ctx.color.EXT, "("+display_callsign+")"]);
+                                        if(display_callsign !== null) msg.push("as",[ctx.color.EXT, "("+display_callsign+")"]);
 
                                         msg.push("from APRS Importer");
                                     break;
