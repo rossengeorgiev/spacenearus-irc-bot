@@ -74,6 +74,7 @@ var bot = {
                 switch(cmd) {
                     // regular commands
                     case "8ball": ctx.handle_8ball(opts); break;
+                    case "flip": ctx.handle_flip(opts); break;
                     case "aprs": ctx.handle_aprs(opts); break;
                     case "hysplit": ctx.handle_hysplit(opts); break;
                     case "track": ctx.handle_track(opts); break;
@@ -1255,6 +1256,11 @@ var bot = {
         else {
             this.respond(opts.channel, opts.from, "I haven't got a clue");
         }
+    },
+
+    handle_flip: function(opts) {
+        var ctx = this;
+        ctx.respond(opts.channel, opts.from, ["You got:", [ctx.color.SBJ, ((Math.random() > 0.5) ? "Heads" : "Tails")] ]);
     },
 
     handle_8ball: function(opts) {
