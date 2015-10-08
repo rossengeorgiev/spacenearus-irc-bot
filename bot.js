@@ -34,6 +34,7 @@ var bot = {
 
     regex_cmd: /^[\!\.]([0-9a-zA-Z]+) ?(.*)?$/,
     regex_docid: /([a-f0-9]{64}|[a-f0-9]{32})/gi,
+    regex_reltime: /([0-9]+)([mhdw])/gi,
 
     client: null,
     crashed: false,
@@ -129,7 +130,15 @@ var bot = {
                                            ctx.handle_cancel(opts);
                                     },
                                     function() {
-                                        ctx.respond(opts.channel, opts.from, "Calm down! You need to be an admin to do that.");
+                                        ctx.respond(opts.channel, opts.from, "Did you know you need to be an admin to do that?");
+                                    });
+                                    break;
+                                case "extend":
+                                    ctx._exec_admin_command(from, function() {
+                                           ctx.handle_extend(opts);
+                                    },
+                                    function() {
+                                        ctx.respond(opts.channel, opts.from, "Your reach doesn't quite extend this far.");
                                     });
                                     break;
 
@@ -521,6 +530,87 @@ var bot = {
                 }
 
                 cancel_doc(doc);
+            }
+        });
+    },
+
+    handle_extend: function(opts) {
+        var ctx = this;
+        var args = opts.args.split(' ', 2)
+        var docid = args[0];
+        var reltime = args[1];
+
+        if(args.length < 2) {
+            ctx.respond(opts.channel, opts.from, ["Command requires at least 2 arguments (docid and relative time)"]);
+            return;
+        }
+
+        var match = docid.match(ctx.regex_docid);
+
+        // invalid doc id
+        if(!match) {
+            ctx.respond(opts.channel, opts.from, ["That's not a valid doc id"]);
+            return;
+        }
+
+        var match = ctx.regex_reltime.exec(reltime);
+
+        // invalid doc id
+        if(!match) {
+            ctx.respond(opts.channel, opts.from, ["Second argument is not a valid relative time (e.g 1d, 1h, 30m, 1w)"]);
+            return;
+        }
+
+        var val = match[1];
+        var suffix = match[2];
+
+        // handy doc extend handler
+        var extend_doc = function(doc) {
+            // extend end date
+            var newdate = moment(doc.end).add(val, suffix);
+            doc.end = newdate.zone(newdate._tzm).format();
+
+            var reqOpts = {
+                url: "http://"+ctx.config.habitat_creds+"@habitat.habhub.org/habitat/" + doc._id,
+                method: "PUT",
+                headers: {
+                    'Content-Type':'application/json; charset=UTF-8',
+                },
+                body: JSON.stringify(doc)
+            };
+
+            req(reqOpts, function(error, response, body) {
+                if (!error && response.statusCode == 201) {
+                    ctx.respond(opts.channel, opts.from, ["Flight window for",
+                                                          [ctx.color.SBJ, doc.name],
+                                                          [ctx.color.EXT, "("+doc._id+")"],
+                                                          "has been extended to",
+                                                           [ctx.color.SBJ, moment(new Date(doc.end)).calendar()]
+                                                         ]);
+                } else {
+                    var msg = ["Got HTTP", [ctx.color.SBJ, response.statusCode]];
+
+                    try {
+                        var json = JSON.parse(body);
+
+                        if(json.error) msg.push([ctx.color.EXT, "("+json.error+")"]);
+                        if(json.reason) msg.push("-", [ctx.color.SBJ, json.reason]);
+                    } catch(e) {}
+
+                    ctx.respond(opts.channel, opts.from, msg);
+                }
+            });
+        };
+
+        req("http://habitat.habhub.org/habitat/" + docid, function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                var doc = JSON.parse(body);
+                if(doc.type !== "flight") {
+                    ctx.respond(opts.channel, opts.from, ["That's not flight doc"]);
+                    return;
+                }
+
+                extend_doc(doc);
             }
         });
     },
