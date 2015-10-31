@@ -482,6 +482,12 @@ var bot = {
 
     handle_cancel: function(opts) {
         var ctx = this;
+
+        if(opts.args === "") {
+                ctx.respond(opts.channel, opts.from, ["Usage: .cancel <flight doc id>"]);
+                return;
+        }
+
         var match = opts.args.match(this.regex_docid);
 
         // invalid doc id
