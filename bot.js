@@ -287,7 +287,7 @@ var bot = {
                     obj[name].server_time = new Date(obj[name].server_time + "Z");
 
                     if(ctx.storage.tracker.data) {
-                        if(!(name in ctx.storage.tracker.data)) {
+                        if(!ctx.storage.tracker.data.hasOwnProperty(name)) {
                             ctx.notify([
                                 "New vehicle on the map:",
                                 [ctx.color.SBJ, obj[name].vehicle],
