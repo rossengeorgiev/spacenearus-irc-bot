@@ -288,12 +288,6 @@ var bot = {
 
                     if(ctx.storage.tracker.data) {
                         if(!ctx.storage.tracker.data.hasOwnProperty(name)) {
-                            console.log("------------"+name+"-------------");
-                            console.log(body);
-                            console.log("------------------------------");
-                            console.log(JSON.stringify(ctx.storage.tracker.data));
-                            console.log("------------------------------");
-
                             ctx.notify([
                                 "New vehicle on the map:",
                                 [ctx.color.SBJ, obj[name].vehicle],
