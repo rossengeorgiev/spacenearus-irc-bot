@@ -1076,30 +1076,6 @@ var bot = {
                         }
                 });
                 break;
-            case "toggle-deprecated":
-                var val = (args.length > 1) ? args[1] : "";
-                var url_arg = (args[0] == "autotrack") ? "auto" : "beta_auto";
-
-                this._exec_admin_command(opts.from, function() {
-                    req({url:"http://127.0.0.1:9993/aprs/importer/"+url_arg+"?enable="+val, json: true, timeout: 2000}, function(error, response, body) {
-                            if(!error && response.statusCode == 200 && body.status == "ok") {
-                                if(url_arg == "auto") {
-                                    ctx.respond(opts.channel, opts.from, "Auto-including of balloons is " + (body.enabled ? "enabled" : "disabled") + ".");
-                                } else {
-                                    ctx.respond(opts.channel, opts.from, "BetaImport of balloons is " + (body.enabled ? "enabled" : "disabled") + ".");
-                                }
-                            } else {
-                                if(response === undefined) {
-                                    ctx.respond(opts.channel, opts.from, "APRS Service API didn't respond in time");
-                                } else {
-                                    ctx.respond(opts.channel, opts.from, "Error: " + body.message);
-                                }
-                            }
-                    });
-                }, function() {
-                    ctx.respond(opts.channel, opts.from, "You need to be an admin to do that.");
-                });
-                break;
             case "":
             case "list":
                 req({url:"http://127.0.0.1:9993/aprs/importer", json: true, timeout: 2000}, function(error, response, body) {
