@@ -1136,6 +1136,32 @@ var bot = {
                         }
                 });
                 break;
+            case "status":
+                req({url:"http://127.0.0.1:9993/aprs/status/", json: true, timeout: 2000}, function(error, response, body) {
+                        if(!error && response.statusCode == 200 && body.status == "ok") {
+                            var msg = ["APRS Gateway:"];
+
+                            for(var key in body.stats) {
+                                var value = body.stats[key];
+
+                                if(key == 'upsince') {
+                                    key = 'uptime';
+                                    value = moment(value*1000).fromNow(true);
+                                }
+
+                                msg.push([ctx.color.SBJ, key], [ctx.color.EXT, value]);
+                            }
+
+                            ctx.respond(opts.channel, false, msg);
+                        } else {
+                            if(response === undefined) {
+                                ctx.respond(opts.channel, opts.from, "APRS Service API didn't respond in time");
+                            } else {
+                                ctx.respond(opts.channel, opts.from, "Error: " + body.message);
+                            }
+                        }
+                });
+                break;
             default:
                 break;
         }
