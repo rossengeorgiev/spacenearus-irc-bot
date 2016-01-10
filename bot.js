@@ -1146,7 +1146,11 @@ var bot = {
 
                                 if(key == 'upsince') {
                                     key = 'uptime';
-                                    value = moment(value*1000).fromNow(true);
+                                    if(value === 0) {
+                                        value = "OFFLINE";
+                                    } else {
+                                        value = moment(value*1000).fromNow(true);
+                                    }
                                 }
 
                                 msg.push([ctx.color.SBJ, key], [ctx.color.EXT, value]);
