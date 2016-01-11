@@ -74,6 +74,7 @@ var bot = {
 
                 switch(cmd) {
                     // regular commands
+                    case "help": ctx.handle_help(opts, false); break;
                     case "8ball": ctx.handle_8ball(opts); break;
                     case "flip": ctx.handle_flip(opts); break;
                     case "aprs": ctx.handle_aprs(opts); break;
@@ -844,6 +845,9 @@ var bot = {
 
         // handle subcmd
         switch(args[0]) {
+            case "help":
+                ctx.handle_help(opts, "#aprs_gateway");
+                return;
             // add APRS callsign to be imported
             case "add":
             // remove a callsign
@@ -1174,6 +1178,11 @@ var bot = {
     // handle hysplit
 
     handle_hysplit: function(options) {
+        if(options.args.split(' ')[0] == "help") {
+            this.handle_help(options, "#hysplit");
+            return;
+        }
+
         if(this.storage.hysplit.timestamp + 30000 > (new Date()).getTime()) {
                     this.reply_hysplit(options);
         }
@@ -1363,6 +1372,15 @@ var bot = {
     handle_flip: function(opts) {
         var ctx = this;
         ctx.respond(opts.channel, opts.from, ["You got:", [ctx.color.SBJ, ((Math.random() > 0.5) ? "Heads" : "Tails")] ]);
+    },
+
+    handle_help: function(opts, suffix) {
+        var ctx = this;
+        var url = 'https://ukhas.org.uk/spacenearus_irc_bot';
+        if(suffix) {
+            url += suffix;
+        }
+        ctx.respond(opts.channel, opts.from, ['Here you go:', [ctx.color.URL, url]]);
     },
 
     handle_8ball: function(opts) {
