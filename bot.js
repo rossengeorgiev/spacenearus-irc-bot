@@ -1177,14 +1177,14 @@ var bot = {
 
     // handle hysplit
 
-    handle_hysplit: function(options) {
-        if(options.args.split(' ')[0] == "help") {
-            this.handle_help(options, "#hysplit");
+    handle_hysplit: function(opts) {
+        if(opts.args.split(' ')[0] == "help") {
+            this.handle_help(opts, "#hysplit");
             return;
         }
 
         if(this.storage.hysplit.timestamp + 30000 > (new Date()).getTime()) {
-                    this.reply_hysplit(options);
+                    this.reply_hysplit(opts);
         }
         else {
             var ctx = this;
@@ -1197,7 +1197,7 @@ var bot = {
 
                     for(var k in ctx.storage.hysplit.data) ctx.storage.hysplit.match[k.toLowerCase()] = k;
 
-                    ctx.reply_hysplit(options);
+                    ctx.reply_hysplit(opts);
                 }
             });
         }
