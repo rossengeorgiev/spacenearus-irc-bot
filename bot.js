@@ -1116,7 +1116,14 @@ var bot = {
                 break;
             case "list-bal":
             case "list-bal-url":
-                var interval = (args.length > 1) ? args[1] : "";
+                var interval = (args.length > 1) ? args[1] : 'NaN';
+                interval = Math.min(24, Math.max(0, interval));
+
+                if(isNaN(interval)) {
+                    ctx.respond(opts.channel, opts.from, "Expected argument to be an integer: 0-24");
+                    break;
+                }
+
                 req({url:"http://127.0.0.1:9993/aprs/allballoons/"+interval, json: true, timeout: 2000}, function(error, response, body) {
                         if(!error && response.statusCode == 200 && body.status == "ok") {
                             if(body.result.length === 0) {
