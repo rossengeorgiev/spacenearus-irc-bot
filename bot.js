@@ -33,8 +33,8 @@ var bot = {
     },
 
     regex_cmd: /^[\!\.]([0-9a-zA-Z]+) ?(.*)?$/,
-    regex_docid: /([a-f0-9]{64}|[a-f0-9]{32})/gi,
-    regex_reltime: /([0-9]+)([mhdw])/gi,
+    regex_docid: /([a-f0-9]{64}|[a-f0-9]{32})/i,
+    regex_reltime: /([0-9]+)([mhdw])/i,
 
     client: null,
     crashed: false,
