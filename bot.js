@@ -75,6 +75,11 @@ var bot = {
                 switch(cmd) {
                     // regular commands
                     case "help": ctx.handle_help(opts, false); break;
+                    case "confetti":
+                        ctx.respond(to, null, ['✲´*。.❄¨¯`* ✲。❄*。¨¯`* ✲']);
+                        ctx.respond(to, null, [' ✲´ *. Congratulations ✲ ¯`*']);
+                        ctx.respond(to, null, ['¨¯`*❄。✲´*。 ✲.❄ 。*¨¯`*✲。']);
+                        break;
                     case "8ball": ctx.handle_8ball(opts); break;
                     case "flip": ctx.handle_flip(opts); break;
                     case "aprs": ctx.handle_aprs(opts); break;
