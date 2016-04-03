@@ -1746,6 +1746,16 @@ var bot = {
     handle_dial: function(opts) {
         var ctx = this;
 
+        var callsignl = opts.args.toLowerCase();
+
+        if(ctx.storage.tracker.data && ctx.storage.tracker.data.hasOwnProperty(callsignl)) {
+            var data = ctx.storage.tracker.data[callsignl];
+            if(data.callsign.toLowerCase().indexOf("aprs") != -1) {
+                ctx.respond(opts.channel, opts.from, [[ctx.color.SBJ, data['vehicle']], "is over APRS. 144.8Mhz EU/Russia/Africa, 144.39Mhz USA, 144.64Mhz China"]);
+                return;
+            }
+        }
+
         req("http://habitat.habhub.org/habitat/_design/flight/_view/end_start_including_payloads?include_docs=true&startkey=["+((new Date()).getTime()/1000)+"]", function(error, response, body) {
             if (!error && response.statusCode == 200) {
                 var data = JSON.parse(body);
