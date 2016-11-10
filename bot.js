@@ -85,6 +85,7 @@ var bot = {
                     case "aprs": ctx.handle_aprs(opts); break;
                     case "hysplit": ctx.handle_hysplit(opts); break;
                     case "track": ctx.handle_track(opts); break;
+                    case "nyan": ctx.handle_track(opts, true); break;
 
                     case "tracker": ctx.respond(to, from, [
                                             "Here you go -",
@@ -1457,8 +1458,9 @@ var bot = {
         });
     },
 
-    handle_track: function(opts) {
+    handle_track: function(opts, nyan) {
         var url = this.url_hmt_vehicle + opts.args.split(/[, ;]/).filter(function(val) { return val !== "";}).join(";");
+        if(nyan) url += "&nyan=1";
         this.respond(opts.channel, opts.from, ["Here you go -", [this.color.URL, url]]);
     },
 
