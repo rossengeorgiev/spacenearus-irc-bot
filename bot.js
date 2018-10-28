@@ -752,6 +752,10 @@ var bot = {
                                 }
 
                                 ctx.respond(channel,"", msg);
+
+                                if(nFound != nPayloads) {
+                                    ctx.respond(channel,"", "Untested documents found. Please refer to https://ukhas.org.uk/guides:documents for help.");
+                                }
                             }
                         });
                     };
