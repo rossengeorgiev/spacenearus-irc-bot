@@ -289,7 +289,7 @@ var bot = {
                     var name = data[k].vehicle.toLowerCase();
 
                     // filter out RS_ sonde spam from announcements
-                    if(/^RS_/.test(name)) continue;
+                    if(/^rs_/.test(name)) continue;
 
                     obj[name] = data[k];
                     obj[name].gps_time = new Date(obj[name].gps_time + "Z");
